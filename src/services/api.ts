@@ -28,9 +28,10 @@ export interface AdminUser {
 }
 
 export interface BasicStats {
-  total_users: number;
-  total_mangas: number;
-  total_chapters: number;
+  user_count: number;
+  manga_count: number;
+  chapter_count: number;
+  pet_count: number;
 }
 
 class ApiService {
