@@ -16,6 +16,13 @@ import {
   PlugInIcon,
   TableIcon,
   UserCircleIcon,
+  TimeIcon,
+  UserIcon,
+  FolderIcon,
+  GroupIcon,
+  BellIcon,
+  ChatIcon,
+  ShootingStarIcon,
 } from "../icons/index";
 import SidebarWidget from "./SidebarWidget";
 
@@ -28,71 +35,66 @@ type NavItem = {
 
 const navItems: NavItem[] = [
   {
-    icon: <GridIcon />,
-    name: "Dashboard",
-    subItems: [{ name: "Ecommerce", path: "/", pro: false }],
+    icon: <TimeIcon />,
+    name: "Tổng quan",
+    path: "/admin",
   },
   {
-    icon: <CalenderIcon />,
-    name: "Calendar",
-    path: "/calendar",
+    icon: <UserIcon />,
+    name: "Thành viên",
+    path: "/admin/members",
   },
   {
-    icon: <UserCircleIcon />,
-    name: "User Profile",
-    path: "/profile",
+    name: "Manga",
+    icon: <FolderIcon />,
+    subItems: [
+      { name: "Danh sách", path: "/admin/manga/list", pro: false },
+      { name: "Tạo mới", path: "/admin/manga/create", pro: false },
+    ],
   },
-
   {
-    name: "Forms",
     icon: <ListIcon />,
-    subItems: [{ name: "Form Elements", path: "/form-elements", pro: false }],
+    name: "Tác giả",
+    path: "/admin/authors",
   },
   {
-    name: "Tables",
-    icon: <TableIcon />,
-    subItems: [{ name: "Basic Tables", path: "/basic-tables", pro: false }],
+    icon: <ListIcon />,
+    name: "Doujinshi",
+    path: "/admin/doujinshi",
   },
   {
-    name: "Pages",
-    icon: <PageIcon />,
-    subItems: [
-      { name: "Blank Page", path: "/blank", pro: false },
-      { name: "404 Error", path: "/error-404", pro: false },
-    ],
+    icon: <ListIcon />,
+    name: "Thể loại",
+    path: "/admin/genres",
+  },
+  {
+    icon: <GroupIcon />,
+    name: "Nhóm dịch",
+    path: "/admin/translation-groups",
+  },
+  {
+    icon: <ShootingStarIcon />,
+    name: "Danh hiệu",
+    path: "/admin/titles",
+  },
+  {
+    icon: <GroupIcon />,
+    name: "Bạn đồng hành",
+    path: "/admin/companions",
+  },
+  {
+    icon: <ChatIcon />,
+    name: "Bình luận",
+    path: "/admin/comments",
+  },
+  {
+    icon: <BellIcon />,
+    name: "Thông báo",
+    path: "/admin/notifications",
   },
 ];
 
-const othersItems: NavItem[] = [
-  {
-    icon: <PieChartIcon />,
-    name: "Charts",
-    subItems: [
-      { name: "Line Chart", path: "/line-chart", pro: false },
-      { name: "Bar Chart", path: "/bar-chart", pro: false },
-    ],
-  },
-  {
-    icon: <BoxCubeIcon />,
-    name: "UI Elements",
-    subItems: [
-      { name: "Alerts", path: "/alerts", pro: false },
-      { name: "Avatar", path: "/avatars", pro: false },
-      { name: "Badge", path: "/badge", pro: false },
-      { name: "Buttons", path: "/buttons", pro: false },
-      { name: "Images", path: "/images", pro: false },
-      { name: "Videos", path: "/videos", pro: false },
-    ],
-  },
-  {
-    icon: <PlugInIcon />,
-    name: "Authentication",
-    subItems: [
-      { name: "Sign In", path: "/signin", pro: false },
-      { name: "Sign Up", path: "/signup", pro: false },
-    ],
-  },
-];
+const othersItems: NavItem[] = [];
 
 const AppSidebar: React.FC = () => {
   const { isExpanded, isMobileOpen, isHovered, setIsHovered } = useSidebar();
@@ -348,29 +350,12 @@ const AppSidebar: React.FC = () => {
                 }`}
               >
                 {isExpanded || isHovered || isMobileOpen ? (
-                  "Menu"
+                  "Quản lý"
                 ) : (
                   <HorizontaLDots />
                 )}
               </h2>
               {renderMenuItems(navItems, "main")}
-            </div>
-
-            <div className="">
-              <h2
-                className={`mb-4 text-xs uppercase flex leading-[20px] text-gray-400 ${
-                  !isExpanded && !isHovered
-                    ? "lg:justify-center"
-                    : "justify-start"
-                }`}
-              >
-                {isExpanded || isHovered || isMobileOpen ? (
-                  "Others"
-                ) : (
-                  <HorizontaLDots />
-                )}
-              </h2>
-              {renderMenuItems(othersItems, "others")}
             </div>
           </div>
         </nav>
