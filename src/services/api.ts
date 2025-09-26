@@ -106,7 +106,31 @@ class ApiService {
 
   // Users management
   async getUsers(token: string, params?: Record<string, any>): Promise<ApiResponse<any>> {
-    const queryString = params ? '?' + new URLSearchParams(params).toString() : '';
+    let queryString = '';
+    if (params) {
+      const urlParams = new URLSearchParams();
+
+      // Handle standard parameters
+      if (params.page) urlParams.append('page', params.page.toString());
+      if (params.per_page) urlParams.append('per_page', params.per_page.toString());
+      if (params.sort) urlParams.append('sort', params.sort);
+
+      // Handle filter parameters with filter[field] format
+      if (params.filters) {
+        Object.keys(params.filters).forEach(key => {
+          const value = params.filters[key];
+          if (value && value.trim() !== '') {
+            urlParams.append(`filter[${key}]`, value.trim());
+          }
+        });
+      }
+
+      queryString = urlParams.toString() ? '?' + urlParams.toString() : '';
+    }
+
+    // Debug log for development
+    console.log('API URL:', `${API_BASE_URL}/users${queryString}`);
+
     const response = await fetch(`${API_BASE_URL}/users${queryString}`, {
       method: 'GET',
       headers: this.getHeaders(token),
@@ -141,6 +165,35 @@ class ApiService {
   async getGenres(token: string): Promise<ApiResponse<any>> {
     const response = await fetch(`${API_BASE_URL}/genres`, {
       method: 'GET',
+      headers: this.getHeaders(token),
+    });
+
+    return this.handleResponse(response);
+  }
+
+  // User management actions
+  async banUser(token: string, userId: string, banDuration?: string): Promise<ApiResponse<any>> {
+    const response = await fetch(`${API_BASE_URL}/users/${userId}/ban`, {
+      method: 'POST',
+      headers: this.getHeaders(token),
+      body: JSON.stringify({ ban_duration: banDuration }),
+    });
+
+    return this.handleResponse(response);
+  }
+
+  async unbanUser(token: string, userId: string): Promise<ApiResponse<any>> {
+    const response = await fetch(`${API_BASE_URL}/users/${userId}/unban`, {
+      method: 'POST',
+      headers: this.getHeaders(token),
+    });
+
+    return this.handleResponse(response);
+  }
+
+  async deleteUserComments(token: string, userId: string): Promise<ApiResponse<any>> {
+    const response = await fetch(`${API_BASE_URL}/users/${userId}/delete-comment`, {
+      method: 'DELETE',
       headers: this.getHeaders(token),
     });
 
