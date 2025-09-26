@@ -141,9 +141,50 @@ class ApiService {
 
   // Mangas management
   async getMangas(token: string, params?: Record<string, any>): Promise<ApiResponse<any>> {
-    const queryString = params ? '?' + new URLSearchParams(params).toString() : '';
+    let queryString = '';
+    if (params) {
+      const urlParams = new URLSearchParams();
+
+      // Handle standard parameters
+      if (params.page) urlParams.append('page', params.page.toString());
+      if (params.per_page) urlParams.append('per_page', params.per_page.toString());
+      if (params.sort) urlParams.append('sort', params.sort);
+      if (params.include) urlParams.append('include', params.include);
+
+      // Handle filter parameters with filter[field] format
+      if (params.filters) {
+        Object.keys(params.filters).forEach(key => {
+          const value = params.filters[key];
+          if (value && value.toString().trim() !== '') {
+            urlParams.append(`filter[${key}]`, value.toString().trim());
+          }
+        });
+      }
+
+      queryString = urlParams.toString() ? '?' + urlParams.toString() : '';
+    }
+
     const response = await fetch(`${API_BASE_URL}/mangas${queryString}`, {
       method: 'GET',
+      headers: this.getHeaders(token),
+    });
+
+    return this.handleResponse(response);
+  }
+
+  async updateMangaStatus(token: string, mangaId: string, isReviewed: boolean): Promise<ApiResponse<any>> {
+    const response = await fetch(`${API_BASE_URL}/mangas/${mangaId}`, {
+      method: 'PUT',
+      headers: this.getHeaders(token),
+      body: JSON.stringify({ is_reviewed: isReviewed ? 1 : 0 }),
+    });
+
+    return this.handleResponse(response);
+  }
+
+  async deleteManga(token: string, mangaId: string): Promise<ApiResponse<any>> {
+    const response = await fetch(`${API_BASE_URL}/mangas/${mangaId}`, {
+      method: 'DELETE',
       headers: this.getHeaders(token),
     });
 
@@ -194,6 +235,55 @@ class ApiService {
   async deleteUserComments(token: string, userId: string): Promise<ApiResponse<any>> {
     const response = await fetch(`${API_BASE_URL}/users/${userId}/delete-comment`, {
       method: 'DELETE',
+      headers: this.getHeaders(token),
+    });
+
+    return this.handleResponse(response);
+  }
+
+  // Autocomplete search endpoints
+  async searchGroups(token: string, query: string): Promise<ApiResponse<any>> {
+    const urlParams = new URLSearchParams();
+    urlParams.append('filter[name]', query);
+
+    const response = await fetch(`${API_BASE_URL}/groups?${urlParams.toString()}`, {
+      method: 'GET',
+      headers: this.getHeaders(token),
+    });
+
+    return this.handleResponse(response);
+  }
+
+  async searchArtists(token: string, query: string): Promise<ApiResponse<any>> {
+    const urlParams = new URLSearchParams();
+    urlParams.append('filter[name]', query);
+
+    const response = await fetch(`${API_BASE_URL}/artists?${urlParams.toString()}`, {
+      method: 'GET',
+      headers: this.getHeaders(token),
+    });
+
+    return this.handleResponse(response);
+  }
+
+  async searchDoujinshis(token: string, query: string): Promise<ApiResponse<any>> {
+    const urlParams = new URLSearchParams();
+    urlParams.append('filter[name]', query);
+
+    const response = await fetch(`${API_BASE_URL}/doujinshis?${urlParams.toString()}`, {
+      method: 'GET',
+      headers: this.getHeaders(token),
+    });
+
+    return this.handleResponse(response);
+  }
+
+  async searchUsers(token: string, query: string): Promise<ApiResponse<any>> {
+    const urlParams = new URLSearchParams();
+    urlParams.append('filter[name]', query);
+
+    const response = await fetch(`${API_BASE_URL}/users?${urlParams.toString()}`, {
+      method: 'GET',
       headers: this.getHeaders(token),
     });
 

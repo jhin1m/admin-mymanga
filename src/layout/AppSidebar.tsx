@@ -48,8 +48,8 @@ const navItems: NavItem[] = [
     name: "Manga",
     icon: <FolderIcon />,
     subItems: [
-      { name: "Danh sách", path: "/admin/manga/list", pro: false },
-      { name: "Tạo mới", path: "/admin/manga/create", pro: false },
+      { name: "Danh sách", path: "/admin/mangas", pro: false },
+      { name: "Tạo mới", path: "/admin/mangas/create", pro: false },
     ],
   },
   {

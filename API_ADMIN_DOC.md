@@ -161,10 +161,76 @@ List mangas
     "data": [
       {
         "id": "uuid-123",
+        "user_id": "uuid-user",
+        "artist_id": "uuid-artist",
+        "last_chapter_id": "uuid-chapter",
+        "doujinshi_id": "uuid-doujinshi",
+        "group_id": "uuid-group",
         "name": "Manga Title",
         "name_alt": "Alternative Title",
-        "status": "ongoing",
-        "cover": "https://example.com/cover.jpg",
+        "pilot": "Manga description",
+        "status": "2", // 1: completed, 2: ongoing
+        "views": 1000,
+        "views_day": 100,
+        "views_week": 500,
+        "average_rating": 4.5,
+        "is_hot": 0,
+        "hot_at": null,
+        "is_reviewed": 1, // 0: pending, 1: approved
+        "slug": "manga-title",
+        "finished_by": null,
+        "created_at": "2024-01-01T00:00:00.000000Z",
+        "updated_at": "2024-01-02T00:00:00.000000Z",
+        "cover_full_url": "https://example.com/cover.jpg",
+        "group": null,
+        "user": {
+                "id": "327273ff-557e-4914-9c36-d292a80c65a4",
+                "name": "Admin",
+                "email": "admin@admin.com",
+                "google_id": null,
+                "email_verified_at": null,
+                "total_points": 172160,
+                "used_points": 34800,
+                "achievements_points": 23210,
+                "pet_id": "ec318d1a-b98c-4f67-8142-1bd2299b639d",
+                "achievement_id": "809b996c-5c41-401b-aaeb-9eef773dc18e",
+                "banned_until": null,
+                "limit_pet_points": 195,
+                "limit_achievement_points": 295,
+                "created_at": "2022-10-11T13:55:13.000000Z",
+                "updated_at": "2025-09-26T04:26:08.000000Z",
+                "avatar_full_url": "https:\/\/i2.mgcdnxyz.cfd\/storage\/images\/avatars\/SJymFmdvOArcKVZlzUNOaXCm6Nd1tLE1f6IqA9DF.png"
+            },
+        "genres": [
+                {
+                    "id": 101,
+                    "name": "Manhwa",
+                    "slug": "manhwa",
+                    "show_on_pc": 1,
+                    "show_on_mb": 1,
+                    "created_at": "2022-10-11T13:55:13.000000Z",
+                    "updated_at": "2023-10-05T10:22:31.000000Z",
+                    "pivot": {
+                        "manga_id": "c749b5fe-1a42-4fb5-8127-352b1ed7a2c2",
+                        "genre_id": 101
+                    }
+                },
+                {
+                    "id": 1256,
+                    "name": "Con g\u00e1i",
+                    "slug": "con-gai",
+                    "show_on_pc": 0,
+                    "show_on_mb": 0,
+                    "created_at": "2025-05-05T00:21:14.000000Z",
+                    "updated_at": "2025-05-05T00:21:14.000000Z",
+                    "pivot": {
+                        "manga_id": "c749b5fe-1a42-4fb5-8127-352b1ed7a2c2",
+                        "genre_id": 1256
+                    }
+                }
+          ],
+        "artist": null,
+        "doujinshi": null,
         "is_reviewed": true,
         "created_at": "2024-01-01T00:00:00.000000Z"
       }
