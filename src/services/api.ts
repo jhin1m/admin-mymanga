@@ -52,11 +52,12 @@ class ApiService {
     const data = await response.json();
 
     if (!response.ok) {
+      console.error('API Error Response:', data);
       throw {
         success: false,
         message: data.message || 'An error occurred',
         code: response.status,
-        errors: data.errors
+        errors: data.errors || data.error // Handle both 'errors' and 'error'
       };
     }
 
@@ -191,11 +192,78 @@ class ApiService {
     return this.handleResponse(response);
   }
 
+  async getMangaById(token: string, mangaId: string): Promise<ApiResponse<any>> {
+    const response = await fetch(`${API_BASE_URL}/mangas/${mangaId}?include=group,user,genres,artist,doujinshi`, {
+      method: 'GET',
+      headers: this.getHeaders(token),
+    });
+
+    return this.handleResponse(response);
+  }
+
+  async updateManga(token: string, mangaId: string, formData: FormData): Promise<ApiResponse<any>> {
+    const headers: HeadersInit = {
+      'Accept': 'application/json',
+    };
+
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    const response = await fetch(`${API_BASE_URL}/mangas/${mangaId}`, {
+      method: 'POST', // Laravel uses POST with _method=PUT for multipart
+      headers: headers,
+      body: formData,
+    });
+
+    return this.handleResponse(response);
+  }
+
+  async updateMangaJSON(token: string, mangaId: string, data: Record<string, any>): Promise<ApiResponse<any>> {
+    const response = await fetch(`${API_BASE_URL}/mangas/${mangaId}`, {
+      method: 'PUT',
+      headers: this.getHeaders(token),
+      body: JSON.stringify(data),
+    });
+
+    return this.handleResponse(response);
+  }
+
   // Chapters management
   async getChapters(token: string, params?: Record<string, any>): Promise<ApiResponse<any>> {
-    const queryString = params ? '?' + new URLSearchParams(params).toString() : '';
+    let queryString = '';
+    if (params) {
+      const urlParams = new URLSearchParams();
+
+      // Handle standard parameters
+      if (params.page) urlParams.append('page', params.page.toString());
+      if (params.per_page) urlParams.append('per_page', params.per_page.toString());
+      if (params.sort) urlParams.append('sort', params.sort);
+
+      // Handle filter parameters with filter[field] format
+      if (params.filters) {
+        Object.keys(params.filters).forEach(key => {
+          const value = params.filters[key];
+          if (value && value.toString().trim() !== '') {
+            urlParams.append(`filter[${key}]`, value.toString().trim());
+          }
+        });
+      }
+
+      queryString = urlParams.toString() ? '?' + urlParams.toString() : '';
+    }
+
     const response = await fetch(`${API_BASE_URL}/chapters${queryString}`, {
       method: 'GET',
+      headers: this.getHeaders(token),
+    });
+
+    return this.handleResponse(response);
+  }
+
+  async deleteChapter(token: string, chapterId: string): Promise<ApiResponse<any>> {
+    const response = await fetch(`${API_BASE_URL}/chapters/${chapterId}`, {
+      method: 'DELETE',
       headers: this.getHeaders(token),
     });
 
@@ -205,6 +273,15 @@ class ApiService {
   // Genres management
   async getGenres(token: string): Promise<ApiResponse<any>> {
     const response = await fetch(`${API_BASE_URL}/genres`, {
+      method: 'GET',
+      headers: this.getHeaders(token),
+    });
+
+    return this.handleResponse(response);
+  }
+
+  async getGenresAll(token: string): Promise<ApiResponse<any>> {
+    const response = await fetch(`${API_BASE_URL}/genres?per_page=999999`, {
       method: 'GET',
       headers: this.getHeaders(token),
     });

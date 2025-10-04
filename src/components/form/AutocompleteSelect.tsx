@@ -9,6 +9,7 @@ interface Option {
 interface AutocompleteSelectProps {
   placeholder?: string;
   value?: string;
+  initialLabel?: string; // Initial display label
   onChange: (value: string, option?: Option) => void;
   onSearch: (query: string) => Promise<Option[]>;
   className?: string;
@@ -20,6 +21,7 @@ interface AutocompleteSelectProps {
 const AutocompleteSelect: React.FC<AutocompleteSelectProps> = ({
   placeholder = "Tìm kiếm...",
   value = "",
+  initialLabel = "",
   onChange,
   onSearch,
   className = "",
@@ -27,11 +29,13 @@ const AutocompleteSelect: React.FC<AutocompleteSelectProps> = ({
   minSearchLength = 2,
   debounceMs = 300,
 }) => {
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState(initialLabel);
   const [options, setOptions] = useState<Option[]>([]);
   const [loading, setLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
-  const [selectedOption, setSelectedOption] = useState<Option | null>(null);
+  const [selectedOption, setSelectedOption] = useState<Option | null>(
+    initialLabel && value ? { value, label: initialLabel } : null
+  );
   const [focusedIndex, setFocusedIndex] = useState(-1);
 
   const inputRef = useRef<HTMLInputElement>(null);
@@ -142,13 +146,18 @@ const AutocompleteSelect: React.FC<AutocompleteSelectProps> = ({
     }
   };
 
-  // Update query when value prop changes externally
+  // Update query when initialLabel changes
   useEffect(() => {
-    if (!value && query) {
+    if (initialLabel) {
+      setQuery(initialLabel);
+      if (value) {
+        setSelectedOption({ value, label: initialLabel });
+      }
+    } else if (!value && query) {
       setQuery("");
       setSelectedOption(null);
     }
-  }, [value, query]);
+  }, [initialLabel, value]);
 
   return (
     <div className="relative">
