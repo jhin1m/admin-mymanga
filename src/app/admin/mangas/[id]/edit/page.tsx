@@ -11,6 +11,7 @@ import RichTextEditor from "@/components/form/RichTextEditor";
 import ImageUploader from "@/components/form/ImageUploader";
 import ChapterList from "@/components/manga/ChapterList";
 import Switch from "@/components/form/switch/Switch";
+import Alert from "@/components/ui/alert/Alert";
 
 interface Manga {
   id: string;
@@ -45,7 +46,30 @@ export default function MangaEditPage() {
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+
+  // Alert state
+  interface AlertState {
+    show: boolean;
+    variant: "success" | "error" | "warning" | "info";
+    title: string;
+    message: string;
+  }
+  const [alert, setAlert] = useState<AlertState>({
+    show: false,
+    variant: "info",
+    title: "",
+    message: "",
+  });
+
+  const showAlert = (variant: "success" | "error" | "warning" | "info", title: string, message: string) => {
+    setAlert({ show: true, variant, title, message });
+    // Auto-hide after 5 seconds for success messages
+    if (variant === "success") {
+      setTimeout(() => {
+        setAlert(prev => ({ ...prev, show: false }));
+      }, 5000);
+    }
+  };
 
   // Form data
   const [name, setName] = useState("");
@@ -103,7 +127,7 @@ export default function MangaEditPage() {
         }
       } catch (error) {
         console.error("Error fetching data:", error);
-        alert("Có lỗi xảy ra khi tải dữ liệu");
+        showAlert("error", "Lỗi tải dữ liệu", "Có lỗi xảy ra khi tải dữ liệu truyện");
       } finally {
         setLoading(false);
       }
@@ -112,37 +136,12 @@ export default function MangaEditPage() {
     fetchData();
   }, [token, mangaId]);
 
-  // Track initial load to prevent false unsaved changes
-  const [isInitialLoad, setIsInitialLoad] = useState(true);
-
-  // Warn before leaving with unsaved changes
-  useEffect(() => {
-    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      if (hasUnsavedChanges) {
-        e.preventDefault();
-        e.returnValue = "";
-      }
-    };
-
-    window.addEventListener("beforeunload", handleBeforeUnload);
-    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
-  }, [hasUnsavedChanges]);
-
-  // Mark as unsaved when form changes (but not on initial load)
-  useEffect(() => {
-    if (isInitialLoad) {
-      setIsInitialLoad(false);
-      return;
-    }
-    setHasUnsavedChanges(true);
-  }, [name, nameAlt, doujinshiId, status, artistId, groupId, userId, pilot, isHot, selectedGenres, coverImage]);
-
   const handleSave = async () => {
     if (!token) return;
 
     // Validation
     if (!name.trim()) {
-      alert("Vui lòng nhập tên truyện");
+      showAlert("warning", "Thiếu thông tin", "Vui lòng nhập tên truyện");
       return;
     }
 
@@ -182,11 +181,9 @@ export default function MangaEditPage() {
         const response = await apiService.updateManga(token, mangaId, formData);
 
         if (response.success) {
-          setHasUnsavedChanges(false);
-          alert("Đã cập nhật truyện thành công");
-          router.push("/admin/mangas");
+          showAlert("success", "Thành công", "Đã cập nhật truyện thành công");
         } else {
-          alert(response.message || "Có lỗi xảy ra khi cập nhật truyện");
+          showAlert("error", "Lỗi", response.message || "Có lỗi xảy ra khi cập nhật truyện");
         }
       } else {
         // Use JSON payload when no cover image
@@ -213,15 +210,12 @@ export default function MangaEditPage() {
         if (artistId) payload.artist_id = artistId;
         if (groupId) payload.group_id = groupId;
 
-        console.log("Sending payload:", JSON.stringify(payload));
         const response = await apiService.updateMangaJSON(token, mangaId, payload);
 
         if (response.success) {
-          setHasUnsavedChanges(false);
-          alert("Đã cập nhật truyện thành công");
-          router.push("/admin/mangas");
+          showAlert("success", "Thành công", "Đã cập nhật truyện thành công");
         } else {
-          alert(response.message || "Có lỗi xảy ra khi cập nhật truyện");
+          showAlert("error", "Lỗi", response.message || "Có lỗi xảy ra khi cập nhật truyện");
         }
       }
     } catch (error: any) {
@@ -238,8 +232,8 @@ export default function MangaEditPage() {
             }
             return `${field}: ${messages}`;
           })
-          .join('\n');
-        alert(`Lỗi validation:\n${errorMessages}`);
+          .join(', ');
+        showAlert("error", "Lỗi validation", errorMessages);
       } else if (error.errors) {
         // Fallback for other error formats
         if (typeof error.errors === 'object' && !Array.isArray(error.errors)) {
@@ -250,13 +244,13 @@ export default function MangaEditPage() {
               }
               return `${field}: ${messages}`;
             })
-            .join('\n');
-          alert(`Lỗi validation:\n${errorMessages}`);
+            .join(', ');
+          showAlert("error", "Lỗi validation", errorMessages);
         } else {
-          alert(`Lỗi: ${JSON.stringify(error.errors)}`);
+          showAlert("error", "Lỗi", JSON.stringify(error.errors));
         }
       } else {
-        alert(error.message || "Có lỗi xảy ra khi cập nhật truyện");
+        showAlert("error", "Lỗi cập nhật", error.message || "Có lỗi xảy ra khi cập nhật truyện");
       }
     } finally {
       setSaving(false);
@@ -274,6 +268,17 @@ export default function MangaEditPage() {
   return (
     <div>
       <PageBreadcrumb pageTitle="Chỉnh sửa Truyện" />
+
+      {/* Alert notification */}
+      {alert.show && (
+        <div className="mb-6">
+          <Alert
+            variant={alert.variant}
+            title={alert.title}
+            message={alert.message}
+          />
+        </div>
+      )}
 
       {/* Fixed save button */}
       <div className="fixed top-20 right-6 z-40">

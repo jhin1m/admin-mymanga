@@ -7,6 +7,7 @@ import Badge from "@/components/ui/badge/Badge";
 import Pagination from "@/components/ui/pagination/Pagination";
 import { apiService } from "@/services/api";
 import { useAuth } from "@/context/AuthContext";
+import { PencilIcon, CheckCircleIcon, TrashBinIcon } from "@/icons";
 
 interface Manga {
   id: string;
@@ -254,40 +255,6 @@ const MangaGrid: React.FC<MangaGridProps> = ({ searchFilters }) => {
                 }}
               />
 
-              {/* Overlay with actions - visible on hover */}
-              <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                <div className="flex gap-2">
-                  <Link href={`/admin/mangas/${manga.id}/edit`}>
-                    <Button size="sm" variant="primary">
-                      Edit
-                    </Button>
-                  </Link>
-                  <Button
-                    size="sm"
-                    variant={manga.is_reviewed ? "outline" : "primary"}
-                    onClick={() => handleApprove(manga.id, !!manga.is_reviewed)}
-                    disabled={actionLoading[`approve-${manga.id}`]}
-                    className="bg-green-600 text-white hover:bg-green-700 border-green-600"
-                  >
-                    {actionLoading[`approve-${manga.id}`]
-                      ? "..."
-                      : manga.is_reviewed
-                        ? "Hủy duyệt"
-                        : "Duyệt"
-                    }
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => handleDelete(manga.id, manga.name)}
-                    disabled={actionLoading[`delete-${manga.id}`]}
-                    className="bg-red-600 text-white hover:bg-red-700 border-red-600"
-                  >
-                    {actionLoading[`delete-${manga.id}`] ? "..." : "Xóa"}
-                  </Button>
-                </div>
-              </div>
-
               {/* Status badges */}
               <div className="absolute top-2 right-2 flex flex-col gap-1">
                 <Badge
@@ -307,7 +274,7 @@ const MangaGrid: React.FC<MangaGridProps> = ({ searchFilters }) => {
             {/* Content */}
             <div className="p-4">
               <Link
-                href={`/admin/mangas/${manga.id}`}
+                href={`/admin/mangas/${manga.id}/edit`}
                 className="block group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors"
               >
                 <h3 className="font-semibold text-gray-900 dark:text-white line-clamp-2 mb-2">
@@ -357,6 +324,37 @@ const MangaGrid: React.FC<MangaGridProps> = ({ searchFilters }) => {
                 <div className="flex justify-between">
                   <span>Cập nhật:</span>
                   <span className="font-medium">{formatDate(manga.updated_at)}</span>
+                </div>
+
+                {/* Action buttons */}
+                <div className="flex gap-2 pt-3">
+                  <Link href={`/admin/mangas/${manga.id}/edit`}>
+                    <Button size="md" variant="primary" className="p-2 min-w-[32px] h-8 flex items-center justify-center">
+                      <PencilIcon className="w-6 h-6" />
+                    </Button>
+                  </Link>
+                  <Button
+                    size="md"
+                    variant={manga.is_reviewed ? "outline" : "primary"}
+                    onClick={() => handleApprove(manga.id, !!manga.is_reviewed)}
+                    disabled={actionLoading[`approve-${manga.id}`]}
+                    className="p-2 min-w-[32px] h-8 bg-green-600 text-white hover:bg-green-700 border-green-600 flex items-center justify-center"
+                  >
+                    {actionLoading[`approve-${manga.id}`] ? (
+                      "..."
+                    ) : (
+                      <CheckCircleIcon className="w-6 h-6" />
+                    )}
+                  </Button>
+                  <Button
+                    size="md"
+                    variant="outline"
+                    onClick={() => handleDelete(manga.id, manga.name)}
+                    disabled={actionLoading[`delete-${manga.id}`]}
+                    className="p-2 min-w-[32px] h-8 bg-red-600 text-white hover:bg-red-700 border-red-600 flex items-center justify-center"
+                  >
+                    {actionLoading[`delete-${manga.id}`] ? "..." : <TrashBinIcon className="w-6 h-6" />}
+                  </Button>
                 </div>
               </div>
             </div>
