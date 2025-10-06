@@ -270,6 +270,68 @@ class ApiService {
     return this.handleResponse(response);
   }
 
+  async getChapterById(token: string, chapterId: string): Promise<ApiResponse<any>> {
+    const response = await fetch(`${API_BASE_URL}/chapters/${chapterId}`, {
+      method: 'GET',
+      headers: this.getHeaders(token),
+    });
+
+    return this.handleResponse(response);
+  }
+
+  async updateChapter(token: string, chapterId: string, data: { name: string }): Promise<ApiResponse<any>> {
+    const response = await fetch(`${API_BASE_URL}/chapters/${chapterId}?_method=put`, {
+      method: 'POST',
+      headers: this.getHeaders(token),
+      body: JSON.stringify(data),
+    });
+
+    return this.handleResponse(response);
+  }
+
+  async uploadChapterImage(token: string, chapterId: string, file: File): Promise<ApiResponse<any>> {
+    const formData = new FormData();
+    formData.append('image', file);
+
+    const headers: HeadersInit = {
+      'Accept': 'application/json',
+    };
+
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    const response = await fetch(`${API_BASE_URL}/chapters/${chapterId}/add-img?_method=put`, {
+      method: 'PUT',
+      headers: headers,
+      body: formData,
+    });
+
+    return this.handleResponse(response);
+  }
+
+  async createChapter(token: string, mangaId: string, name: string): Promise<ApiResponse<any>> {
+    const formData = new FormData();
+    formData.append('name', name);
+    formData.append('manga_id', mangaId);
+
+    const headers: HeadersInit = {
+      'Accept': 'application/json',
+    };
+
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    const response = await fetch(`${API_BASE_URL}/chapters`, {
+      method: 'POST',
+      headers: headers,
+      body: formData,
+    });
+
+    return this.handleResponse(response);
+  }
+
   // Genres management
   async getGenres(token: string): Promise<ApiResponse<any>> {
     const response = await fetch(`${API_BASE_URL}/genres`, {
