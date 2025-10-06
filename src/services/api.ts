@@ -189,6 +189,15 @@ class ApiService {
       headers: this.getHeaders(token),
     });
 
+    // Handle 204 No Content response
+    if (response.status === 204) {
+      return {
+        success: true,
+        message: 'Manga deleted successfully',
+        code: 204,
+      };
+    }
+
     return this.handleResponse(response);
   }
 
@@ -229,6 +238,34 @@ class ApiService {
     return this.handleResponse(response);
   }
 
+  async createManga(token: string, payload: FormData | Record<string, any>): Promise<ApiResponse<any>> {
+    if (payload instanceof FormData) {
+      const headers: HeadersInit = {
+        'Accept': 'application/json',
+      };
+
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
+      const response = await fetch(`${API_BASE_URL}/mangas`, {
+        method: 'POST',
+        headers: headers,
+        body: payload,
+      });
+
+      return this.handleResponse(response);
+    } else {
+      const response = await fetch(`${API_BASE_URL}/mangas`, {
+        method: 'POST',
+        headers: this.getHeaders(token),
+        body: JSON.stringify(payload),
+      });
+
+      return this.handleResponse(response);
+    }
+  }
+
   // Chapters management
   async getChapters(token: string, params?: Record<string, any>): Promise<ApiResponse<any>> {
     let queryString = '';
@@ -266,6 +303,15 @@ class ApiService {
       method: 'DELETE',
       headers: this.getHeaders(token),
     });
+
+    // Handle 204 No Content response
+    if (response.status === 204) {
+      return {
+        success: true,
+        message: 'Chapter deleted successfully',
+        code: 204,
+      };
+    }
 
     return this.handleResponse(response);
   }

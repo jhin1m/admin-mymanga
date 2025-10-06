@@ -5,7 +5,7 @@ import { useAuth } from "@/context/AuthContext";
 import { apiService } from "@/services/api";
 import { ConfirmModal } from "@/components/ui/modal/ConfirmModal";
 import { useModal } from "@/hooks/useModal";
-import { Alert } from "@/components/ui/alert/Alert";
+import Alert from "@/components/ui/alert/Alert";
 
 interface Chapter {
   id: string;
@@ -33,7 +33,28 @@ const ChapterList: React.FC<ChapterListProps> = ({ mangaId, onRefresh }) => {
   const deleteModal = useModal();
   const bulkDeleteModal = useModal();
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
-  const [alert, setAlert] = useState<{ type: "success" | "error"; message: string } | null>(null);
+
+  interface AlertState {
+    show: boolean;
+    variant: "success" | "error" | "warning" | "info";
+    title: string;
+    message: string;
+  }
+  const [alert, setAlert] = useState<AlertState>({
+    show: false,
+    variant: "info",
+    title: "",
+    message: "",
+  });
+
+  const showAlert = (variant: "success" | "error", title: string, message: string) => {
+    setAlert({ show: true, variant, title, message });
+    if (variant === "success") {
+      setTimeout(() => {
+        setAlert(prev => ({ ...prev, show: false }));
+      }, 5000);
+    }
+  };
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleString("vi-VN", {
@@ -100,11 +121,11 @@ const ChapterList: React.FC<ChapterListProps> = ({ mangaId, onRefresh }) => {
       await apiService.deleteChapter(token, deleteTarget.id);
       await fetchChapters();
       if (onRefresh) onRefresh();
-      setAlert({ type: "success", message: "Đã xóa chương thành công" });
+      showAlert("success", "Thành công", "Đã xóa chương thành công");
       deleteModal.closeModal();
     } catch (error) {
       console.error("Error deleting chapter:", error);
-      setAlert({ type: "error", message: "Có lỗi xảy ra khi xóa chương" });
+      showAlert("error", "Lỗi", "Có lỗi xảy ra khi xóa chương");
     } finally {
       setActionLoading(prev => ({ ...prev, [deleteTarget.id]: false }));
       setDeleteTarget(null);
@@ -122,11 +143,11 @@ const ChapterList: React.FC<ChapterListProps> = ({ mangaId, onRefresh }) => {
       setSelectedChapters([]);
       await fetchChapters();
       if (onRefresh) onRefresh();
-      setAlert({ type: "success", message: `Đã xóa ${count} chương thành công` });
+      showAlert("success", "Thành công", `Đã xóa ${count} chương thành công`);
       bulkDeleteModal.closeModal();
     } catch (error) {
       console.error("Error deleting chapters:", error);
-      setAlert({ type: "error", message: "Có lỗi xảy ra khi xóa các chương" });
+      showAlert("error", "Lỗi", "Có lỗi xảy ra khi xóa các chương");
     } finally {
       setBulkDeleting(false);
     }
@@ -143,12 +164,11 @@ const ChapterList: React.FC<ChapterListProps> = ({ mangaId, onRefresh }) => {
   return (
     <div className="space-y-4">
       {/* Alert notifications */}
-      {alert && (
+      {alert.show && (
         <Alert
-          type={alert.type}
-          title={alert.type === "success" ? "Thành công" : "Lỗi"}
+          variant={alert.variant}
+          title={alert.title}
           message={alert.message}
-          onClose={() => setAlert(null)}
         />
       )}
 

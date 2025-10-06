@@ -5,6 +5,8 @@ import Link from "next/link";
 import Button from "@/components/ui/button/Button";
 import Badge from "@/components/ui/badge/Badge";
 import Pagination from "@/components/ui/pagination/Pagination";
+import Alert from "@/components/ui/alert/Alert";
+import { ConfirmModal } from "@/components/ui/modal/ConfirmModal";
 import { apiService } from "@/services/api";
 import { useAuth } from "@/context/AuthContext";
 import { PencilIcon, CheckCircleIcon, TrashBinIcon } from "@/icons";
@@ -85,6 +87,17 @@ const MangaGrid: React.FC<MangaGridProps> = ({ searchFilters }) => {
   });
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<Record<string, boolean>>({});
+  const [deleteModal, setDeleteModal] = useState<{ isOpen: boolean; mangaId: string; mangaName: string }>({
+    isOpen: false,
+    mangaId: '',
+    mangaName: '',
+  });
+  const [alert, setAlert] = useState<{ show: boolean; variant: 'success' | 'error'; title: string; message: string }>({
+    show: false,
+    variant: 'success',
+    title: '',
+    message: '',
+  });
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleString("vi-VN", {
@@ -171,31 +184,101 @@ const MangaGrid: React.FC<MangaGridProps> = ({ searchFilters }) => {
     setActionLoading(prev => ({ ...prev, [`approve-${mangaId}`]: true }));
 
     try {
-      await apiService.updateMangaStatus(token, mangaId, !currentStatus);
-      await fetchMangas(pagination.currentPage, searchFilters);
+      const newStatus = !currentStatus;
+      await apiService.updateMangaStatus(token, mangaId, newStatus);
+
+      // Update local state instead of refetching
+      setMangas(prevMangas =>
+        prevMangas.map(manga =>
+          manga.id === mangaId
+            ? { ...manga, is_reviewed: newStatus ? 1 : 0 }
+            : manga
+        )
+      );
+
+      // Show success alert
+      setAlert({
+        show: true,
+        variant: 'success',
+        title: newStatus ? 'Duyệt truyện thành công' : 'Huỷ duyệt truyện thành công',
+        message: newStatus ? 'Truyện đã được duyệt.' : 'Truyện đã được huỷ duyệt.',
+      });
+
+      // Auto hide alert after 3 seconds
+      setTimeout(() => {
+        setAlert(prev => ({ ...prev, show: false }));
+      }, 3000);
     } catch (error) {
       console.error('Error updating manga status:', error);
-      alert('Có lỗi xảy ra khi cập nhật trạng thái truyện');
+      setAlert({
+        show: true,
+        variant: 'error',
+        title: 'Cập nhật trạng thái thất bại',
+        message: 'Có lỗi xảy ra khi cập nhật trạng thái truyện. Vui lòng thử lại.',
+      });
+
+      // Auto hide alert after 3 seconds
+      setTimeout(() => {
+        setAlert(prev => ({ ...prev, show: false }));
+      }, 3000);
     } finally {
       setActionLoading(prev => ({ ...prev, [`approve-${mangaId}`]: false }));
     }
   };
 
-  const handleDelete = async (mangaId: string, mangaName: string) => {
+  const handleDeleteClick = (mangaId: string, mangaName: string) => {
+    setDeleteModal({
+      isOpen: true,
+      mangaId,
+      mangaName,
+    });
+  };
+
+  const handleDeleteConfirm = async () => {
     if (!token) return;
 
-    const confirmed = confirm(`Bạn có chắc chắn muốn xóa truyện "${mangaName}"?`);
-    if (!confirmed) return;
-
+    const { mangaId, mangaName } = deleteModal;
     setActionLoading(prev => ({ ...prev, [`delete-${mangaId}`]: true }));
 
     try {
       await apiService.deleteManga(token, mangaId);
-      await fetchMangas(pagination.currentPage, searchFilters);
-      alert('Đã xóa truyện thành công');
+
+      // Remove manga from local state instead of refetching
+      setMangas(prevMangas => prevMangas.filter(manga => manga.id !== mangaId));
+
+      // Update pagination count
+      setPagination(prev => ({
+        ...prev,
+        count: Math.max(0, prev.count - 1),
+        total: Math.max(0, prev.total - 1),
+      }));
+
+      setDeleteModal({ isOpen: false, mangaId: '', mangaName: '' });
+      setAlert({
+        show: true,
+        variant: 'success',
+        title: 'Xóa truyện thành công',
+        message: `Đã xóa truyện "${mangaName}" thành công.`,
+      });
+
+      // Auto hide alert after 3 seconds
+      setTimeout(() => {
+        setAlert(prev => ({ ...prev, show: false }));
+      }, 3000);
     } catch (error) {
       console.error('Error deleting manga:', error);
-      alert('Có lỗi xảy ra khi xóa truyện');
+      setDeleteModal({ isOpen: false, mangaId: '', mangaName: '' });
+      setAlert({
+        show: true,
+        variant: 'error',
+        title: 'Xóa truyện thất bại',
+        message: 'Có lỗi xảy ra khi xóa truyện. Vui lòng thử lại.',
+      });
+
+      // Auto hide alert after 3 seconds
+      setTimeout(() => {
+        setAlert(prev => ({ ...prev, show: false }));
+      }, 3000);
     } finally {
       setActionLoading(prev => ({ ...prev, [`delete-${mangaId}`]: false }));
     }
@@ -236,6 +319,17 @@ const MangaGrid: React.FC<MangaGridProps> = ({ searchFilters }) => {
 
   return (
     <div className="space-y-6">
+      {/* Alert Notification */}
+      {alert.show && (
+        <div className="mb-4">
+          <Alert
+            variant={alert.variant}
+            title={alert.title}
+            message={alert.message}
+          />
+        </div>
+      )}
+
       {/* Manga Grid */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
         {mangas.map((manga) => (
@@ -258,16 +352,57 @@ const MangaGrid: React.FC<MangaGridProps> = ({ searchFilters }) => {
               {/* Status badges */}
               <div className="absolute top-2 right-2 flex flex-col gap-1">
                 <Badge
+                  variant="solid"
                   size="sm"
                   color={manga.is_reviewed ? "success" : "warning"}
                 >
                   {manga.is_reviewed ? "Đã duyệt" : "Chờ duyệt"}
                 </Badge>
                 {manga.is_hot === 1 && (
-                  <Badge size="sm" color="error">
+                  <Badge variant="solid" size="sm" color="error">
                     Hot
                   </Badge>
                 )}
+              </div>
+
+              {/* Action buttons overlay */}
+              <div className="absolute bottom-2 left-2 right-2 flex gap-2">
+                <Link href={`/admin/mangas/${manga.id}/edit`} className="flex-1">
+                  <button
+                    className="w-full h-9 inline-flex items-center justify-center bg-brand-500 text-white rounded-lg shadow-lg hover:bg-brand-600 transition-colors"
+                    title="Sửa"
+                  >
+                    <PencilIcon className="w-5 h-5" />
+                  </button>
+                </Link>
+                <button
+                  className={`flex-1 h-9 inline-flex items-center justify-center rounded-lg shadow-lg transition-colors ${
+                    manga.is_reviewed
+                      ? "bg-white text-gray-700 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-400 dark:ring-gray-700"
+                      : "bg-green-600 text-white hover:bg-green-700"
+                  }`}
+                  onClick={() => handleApprove(manga.id, !!manga.is_reviewed)}
+                  disabled={actionLoading[`approve-${manga.id}`]}
+                  title={manga.is_reviewed ? "Huỷ duyệt" : "Duyệt"}
+                >
+                  {actionLoading[`approve-${manga.id}`] ? (
+                    <span className="text-xs">...</span>
+                  ) : (
+                    <CheckCircleIcon className="w-5 h-5" />
+                  )}
+                </button>
+                <button
+                  className="flex-1 h-9 inline-flex items-center justify-center bg-red-600 text-white rounded-lg shadow-lg hover:bg-red-700 transition-colors disabled:opacity-50"
+                  onClick={() => handleDeleteClick(manga.id, manga.name)}
+                  disabled={actionLoading[`delete-${manga.id}`]}
+                  title="Xóa"
+                >
+                  {actionLoading[`delete-${manga.id}`] ? (
+                    <span className="text-xs">...</span>
+                  ) : (
+                    <TrashBinIcon className="w-5 h-5" />
+                  )}
+                </button>
               </div>
             </div>
 
@@ -325,37 +460,6 @@ const MangaGrid: React.FC<MangaGridProps> = ({ searchFilters }) => {
                   <span>Cập nhật:</span>
                   <span className="font-medium">{formatDate(manga.updated_at)}</span>
                 </div>
-
-                {/* Action buttons */}
-                <div className="flex gap-2 pt-3">
-                  <Link href={`/admin/mangas/${manga.id}/edit`}>
-                    <Button size="md" variant="primary" className="p-2 min-w-[32px] h-8 flex items-center justify-center">
-                      <PencilIcon className="w-6 h-6" />
-                    </Button>
-                  </Link>
-                  <Button
-                    size="md"
-                    variant={manga.is_reviewed ? "outline" : "primary"}
-                    onClick={() => handleApprove(manga.id, !!manga.is_reviewed)}
-                    disabled={actionLoading[`approve-${manga.id}`]}
-                    className="p-2 min-w-[32px] h-8 bg-green-600 text-white hover:bg-green-700 border-green-600 flex items-center justify-center"
-                  >
-                    {actionLoading[`approve-${manga.id}`] ? (
-                      "..."
-                    ) : (
-                      <CheckCircleIcon className="w-6 h-6" />
-                    )}
-                  </Button>
-                  <Button
-                    size="md"
-                    variant="outline"
-                    onClick={() => handleDelete(manga.id, manga.name)}
-                    disabled={actionLoading[`delete-${manga.id}`]}
-                    className="p-2 min-w-[32px] h-8 bg-red-600 text-white hover:bg-red-700 border-red-600 flex items-center justify-center"
-                  >
-                    {actionLoading[`delete-${manga.id}`] ? "..." : <TrashBinIcon className="w-6 h-6" />}
-                  </Button>
-                </div>
               </div>
             </div>
           </div>
@@ -370,6 +474,19 @@ const MangaGrid: React.FC<MangaGridProps> = ({ searchFilters }) => {
         perPage={pagination.perPage}
         onPageChange={handlePageChange}
         loading={loading}
+      />
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmModal
+        isOpen={deleteModal.isOpen}
+        onClose={() => setDeleteModal({ isOpen: false, mangaId: '', mangaName: '' })}
+        onConfirm={handleDeleteConfirm}
+        title="Xác nhận xóa truyện"
+        message={`Bạn có chắc chắn muốn xóa truyện "${deleteModal.mangaName}"?\n\nHành động này không thể hoàn tác.`}
+        confirmText="Xóa truyện"
+        cancelText="Hủy"
+        confirmVariant="danger"
+        isLoading={actionLoading[`delete-${deleteModal.mangaId}`]}
       />
     </div>
   );
