@@ -3,6 +3,9 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { apiService } from "@/services/api";
+import { ConfirmModal } from "@/components/ui/modal/ConfirmModal";
+import { useModal } from "@/hooks/useModal";
+import { Alert } from "@/components/ui/alert/Alert";
 
 interface Chapter {
   id: string;
@@ -24,6 +27,13 @@ const ChapterList: React.FC<ChapterListProps> = ({ mangaId, onRefresh }) => {
   const [loading, setLoading] = useState(true);
   const [selectedChapters, setSelectedChapters] = useState<string[]>([]);
   const [actionLoading, setActionLoading] = useState<Record<string, boolean>>({});
+  const [bulkDeleting, setBulkDeleting] = useState(false);
+
+  // Modals and alerts
+  const deleteModal = useModal();
+  const bulkDeleteModal = useModal();
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
+  const [alert, setAlert] = useState<{ type: "success" | "error"; message: string } | null>(null);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleString("vi-VN", {
@@ -76,24 +86,49 @@ const ChapterList: React.FC<ChapterListProps> = ({ mangaId, onRefresh }) => {
     }
   };
 
-  const handleDelete = async (chapterId: string, chapterName: string) => {
-    if (!token) return;
+  const handleDeleteClick = (chapterId: string, chapterName: string) => {
+    setDeleteTarget({ id: chapterId, name: chapterName });
+    deleteModal.openModal();
+  };
 
-    const confirmed = confirm(`Bạn có chắc chắn muốn xóa chương "${chapterName}"?`);
-    if (!confirmed) return;
+  const handleDeleteConfirm = async () => {
+    if (!token || !deleteTarget) return;
 
-    setActionLoading(prev => ({ ...prev, [chapterId]: true }));
+    setActionLoading(prev => ({ ...prev, [deleteTarget.id]: true }));
 
     try {
-      await apiService.deleteChapter(token, chapterId);
+      await apiService.deleteChapter(token, deleteTarget.id);
       await fetchChapters();
       if (onRefresh) onRefresh();
-      alert("Đã xóa chương thành công");
+      setAlert({ type: "success", message: "Đã xóa chương thành công" });
+      deleteModal.closeModal();
     } catch (error) {
       console.error("Error deleting chapter:", error);
-      alert("Có lỗi xảy ra khi xóa chương");
+      setAlert({ type: "error", message: "Có lỗi xảy ra khi xóa chương" });
     } finally {
-      setActionLoading(prev => ({ ...prev, [chapterId]: false }));
+      setActionLoading(prev => ({ ...prev, [deleteTarget.id]: false }));
+      setDeleteTarget(null);
+    }
+  };
+
+  const handleBulkDeleteConfirm = async () => {
+    if (!token || selectedChapters.length === 0) return;
+
+    setBulkDeleting(true);
+
+    try {
+      const count = selectedChapters.length;
+      await apiService.deleteManyChapters(token, selectedChapters);
+      setSelectedChapters([]);
+      await fetchChapters();
+      if (onRefresh) onRefresh();
+      setAlert({ type: "success", message: `Đã xóa ${count} chương thành công` });
+      bulkDeleteModal.closeModal();
+    } catch (error) {
+      console.error("Error deleting chapters:", error);
+      setAlert({ type: "error", message: "Có lỗi xảy ra khi xóa các chương" });
+    } finally {
+      setBulkDeleting(false);
     }
   };
 
@@ -107,6 +142,16 @@ const ChapterList: React.FC<ChapterListProps> = ({ mangaId, onRefresh }) => {
 
   return (
     <div className="space-y-4">
+      {/* Alert notifications */}
+      {alert && (
+        <Alert
+          type={alert.type}
+          title={alert.type === "success" ? "Thành công" : "Lỗi"}
+          message={alert.message}
+          onClose={() => setAlert(null)}
+        />
+      )}
+
       {/* Header actions */}
       <div className="flex justify-between items-center">
         <div className="text-sm text-gray-600 dark:text-gray-400">
@@ -186,7 +231,7 @@ const ChapterList: React.FC<ChapterListProps> = ({ mangaId, onRefresh }) => {
                         </svg>
                       </Link>
                       <button
-                        onClick={() => handleDelete(chapter.id, chapter.name)}
+                        onClick={() => handleDeleteClick(chapter.id, chapter.name)}
                         disabled={actionLoading[chapter.id]}
                         className="inline-flex items-center px-3 py-1.5 text-sm text-red-700 bg-red-50 rounded hover:bg-red-100 dark:bg-red-900/20 dark:text-red-300 dark:hover:bg-red-900/30 transition-colors disabled:opacity-50"
                         title="Xóa"
@@ -223,16 +268,52 @@ const ChapterList: React.FC<ChapterListProps> = ({ mangaId, onRefresh }) => {
             Đã chọn <span className="font-medium">{selectedChapters.length}</span> chương
           </div>
           <button
-            onClick={() => {
-              // Implement bulk delete if needed
-              alert("Tính năng xóa hàng loạt đang được phát triển");
-            }}
-            className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors"
+            onClick={bulkDeleteModal.openModal}
+            disabled={bulkDeleting}
+            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Xóa đã chọn
+            {bulkDeleting ? (
+              <>
+                <div className="w-4 h-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
+                Đang xóa...
+              </>
+            ) : (
+              <>
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+                Xóa đã chọn
+              </>
+            )}
           </button>
         </div>
       )}
+
+      {/* Delete single chapter modal */}
+      <ConfirmModal
+        isOpen={deleteModal.isOpen}
+        onClose={deleteModal.closeModal}
+        onConfirm={handleDeleteConfirm}
+        title="Xác nhận xóa chương"
+        message={`Bạn có chắc chắn muốn xóa chương "${deleteTarget?.name}"?\n\nHành động này không thể hoàn tác.`}
+        confirmText="Xóa"
+        cancelText="Hủy"
+        confirmVariant="danger"
+        isLoading={deleteTarget ? actionLoading[deleteTarget.id] : false}
+      />
+
+      {/* Delete multiple chapters modal */}
+      <ConfirmModal
+        isOpen={bulkDeleteModal.isOpen}
+        onClose={bulkDeleteModal.closeModal}
+        onConfirm={handleBulkDeleteConfirm}
+        title="Xác nhận xóa nhiều chương"
+        message={`Bạn có chắc chắn muốn xóa ${selectedChapters.length} chương đã chọn?\n\nHành động này không thể hoàn tác.`}
+        confirmText="Xóa tất cả"
+        cancelText="Hủy"
+        confirmVariant="danger"
+        isLoading={bulkDeleting}
+      />
     </div>
   );
 };

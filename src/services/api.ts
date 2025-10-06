@@ -332,6 +332,16 @@ class ApiService {
     return this.handleResponse(response);
   }
 
+  async deleteManyChapters(token: string, chapterIds: string[]): Promise<ApiResponse<any>> {
+    const response = await fetch(`${API_BASE_URL}/chapters/delete-many`, {
+      method: 'PUT',
+      headers: this.getHeaders(token),
+      body: JSON.stringify({ ids: chapterIds }),
+    });
+
+    return this.handleResponse(response);
+  }
+
   // Genres management
   async getGenres(token: string): Promise<ApiResponse<any>> {
     const response = await fetch(`${API_BASE_URL}/genres`, {
