@@ -16,8 +16,7 @@ const ImageListItem: React.FC<{
   const [hasError, setHasError] = useState(false);
 
   const handleDelete = () => {
-    const confirmed = confirm(`Bạn có chắc chắn muốn xóa Page ${index + 1}?`);
-    if (confirmed && onDelete) {
+    if (onDelete) {
       onDelete(imageUrl, index);
     }
   };

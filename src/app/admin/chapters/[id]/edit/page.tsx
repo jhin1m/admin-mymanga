@@ -7,6 +7,9 @@ import ChapterInfoForm from "@/components/manga/ChapterInfoForm";
 import ImageUploadZone from "@/components/manga/ImageUploadZone";
 import ImageList from "@/components/manga/ImageList";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
+import { ConfirmModal } from "@/components/ui/modal/ConfirmModal";
+import { useModal } from "@/hooks/useModal";
+import Alert from "@/components/ui/alert/Alert";
 
 interface Chapter {
   id: string;
@@ -33,6 +36,33 @@ const ChapterEditPage = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<string>("");
+
+  // Modal state
+  const { isOpen: isConfirmOpen, openModal: openConfirmModal, closeModal: closeConfirmModal } = useModal();
+
+  // Alert state
+  interface AlertState {
+    show: boolean;
+    variant: "success" | "error" | "warning" | "info";
+    title: string;
+    message: string;
+  }
+  const [alert, setAlert] = useState<AlertState>({
+    show: false,
+    variant: "info",
+    title: "",
+    message: "",
+  });
+
+  const showAlert = (variant: "success" | "error" | "warning" | "info", title: string, message: string) => {
+    setAlert({ show: true, variant, title, message });
+    // Auto-hide after 5 seconds for success messages
+    if (variant === "success") {
+      setTimeout(() => {
+        setAlert(prev => ({ ...prev, show: false }));
+      }, 5000);
+    }
+  };
 
   const formatDateTime = (dateString: string) => {
     const date = new Date(dateString);
@@ -62,8 +92,7 @@ const ChapterEditPage = () => {
       }
     } catch (error: any) {
       console.error("Error fetching chapter:", error);
-      alert(error.message || "Không thể tải thông tin chương");
-      router.push("/admin/mangas");
+      showAlert("error", "Lỗi tải dữ liệu", error.message || "Không thể tải thông tin chương");
     } finally {
       setLoading(false);
     }
@@ -73,27 +102,38 @@ const ChapterEditPage = () => {
     fetchChapterData();
   }, [token, chapterId]);
 
-  const handleSave = async () => {
-    if (!token || !chapterId) return;
-
+  const handleSaveClick = () => {
+    // Validation before opening modal
     if (!chapterName.trim()) {
-      alert("Vui lòng nhập tên chương");
+      showAlert("warning", "Thiếu thông tin", "Vui lòng nhập tên chương");
       return;
     }
+    openConfirmModal();
+  };
+
+  const handleConfirmSave = async () => {
+    if (!token || !chapterId) return;
 
     setSaving(true);
     try {
       const response = await apiService.updateChapter(token, chapterId, {
         name: chapterName,
+        image_urls: images,
       });
 
       if (response.success) {
-        alert("Đã lưu thông tin chương thành công");
+        showAlert("success", "Thành công", "Đã lưu thông tin chương thành công");
+        closeConfirmModal();
         await fetchChapterData();
+      } else {
+        showAlert("error", "Lỗi", response.message || "Có lỗi xảy ra khi lưu chương");
       }
     } catch (error: any) {
       console.error("Error saving chapter:", error);
-      alert(error.message || "Có lỗi xảy ra khi lưu chương");
+      const errorMessage = error.errors
+        ? Object.values(error.errors).flat().join(", ")
+        : error.message || "Có lỗi xảy ra khi lưu chương";
+      showAlert("error", "Lỗi", errorMessage);
     } finally {
       setSaving(false);
     }
@@ -110,9 +150,9 @@ const ChapterEditPage = () => {
   };
 
   const handleDeleteImage = async (imageUrl: string, index: number) => {
-    // Note: The API documentation doesn't specify a delete image endpoint
-    // This is a placeholder - you may need to implement this based on actual API
-    alert("Tính năng xóa ảnh riêng lẻ chưa được hỗ trợ. Tải lên ảnh mới sẽ tự động thay thế toàn bộ.");
+    // Virtual delete - only remove from local state
+    // Changes will be saved when user clicks "Lưu"
+    setImages(prevImages => prevImages.filter((_, i) => i !== index));
   };
 
   if (loading) {
@@ -145,20 +185,24 @@ const ChapterEditPage = () => {
             <span className="font-medium text-gray-300">{lastUpdated}</span>
           </div>
           <button
-            onClick={handleSave}
+            onClick={handleSaveClick}
             disabled={saving}
             className="px-6 py-2.5 bg-brand-600 hover:bg-brand-700 text-white font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
           >
-            {saving ? (
-              <>
-                <div className="w-4 h-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
-                Đang lưu...
-              </>
-            ) : (
-              "Lưu"
-            )}
+            Lưu
           </button>
         </div>
+
+        {/* Alert */}
+        {alert.show && (
+          <div className="mb-4">
+            <Alert
+              variant={alert.variant}
+              title={alert.title}
+              message={alert.message}
+            />
+          </div>
+        )}
 
         {/* Main Content */}
         <div className="space-y-4">
@@ -175,6 +219,19 @@ const ChapterEditPage = () => {
           {/* Image List */}
           <ImageList images={images} onDelete={handleDeleteImage} />
         </div>
+
+        {/* Confirm Save Modal */}
+        <ConfirmModal
+          isOpen={isConfirmOpen}
+          onClose={closeConfirmModal}
+          onConfirm={handleConfirmSave}
+          title="Xác nhận lưu"
+          message={`Bạn có chắc chắn muốn lưu thay đổi cho chương "${chapterName}"?`}
+          confirmText="Lưu"
+          cancelText="Hủy"
+          confirmVariant="primary"
+          isLoading={saving}
+        />
       </div>
     </ProtectedRoute>
   );

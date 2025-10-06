@@ -279,11 +279,27 @@ class ApiService {
     return this.handleResponse(response);
   }
 
-  async updateChapter(token: string, chapterId: string, data: { name: string }): Promise<ApiResponse<any>> {
+  async updateChapter(token: string, chapterId: string, data: { name: string; image_urls: string[] }): Promise<ApiResponse<any>> {
+    const formData = new FormData();
+    formData.append('name', data.name);
+
+    // Add image URLs array
+    data.image_urls.forEach((url) => {
+      formData.append('image_urls[]', url);
+    });
+
+    const headers: HeadersInit = {
+      'Accept': 'application/json',
+    };
+
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
     const response = await fetch(`${API_BASE_URL}/chapters/${chapterId}?_method=put`, {
       method: 'POST',
-      headers: this.getHeaders(token),
-      body: JSON.stringify(data),
+      headers: headers,
+      body: formData,
     });
 
     return this.handleResponse(response);
