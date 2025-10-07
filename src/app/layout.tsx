@@ -1,11 +1,11 @@
-import { Outfit } from 'next/font/google';
+import { Open_Sans } from 'next/font/google';
 import './globals.css';
 
 import { AuthProvider } from '@/context/AuthContext';
 import { SidebarProvider } from '@/context/SidebarContext';
 import { ThemeProvider } from '@/context/ThemeContext';
 
-const outfit = Outfit({
+const openSans = Open_Sans({
   subsets: ["latin"],
 });
 
@@ -16,7 +16,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${outfit.className} dark:bg-gray-900`}>
+      <body className={`${openSans.className} dark:bg-gray-900`}>
         <ThemeProvider>
           <AuthProvider>
             <SidebarProvider>{children}</SidebarProvider>

@@ -372,7 +372,7 @@ const MangaGrid: React.FC<MangaGridProps> = ({ searchFilters }) => {
                     className="w-full h-9 inline-flex items-center justify-center bg-brand-500 text-white rounded-lg shadow-lg hover:bg-brand-600 transition-colors"
                     title="Sửa"
                   >
-                    <PencilIcon className="w-5 h-5" />
+                    <PencilIcon className="w-6 h-6" />
                   </button>
                 </Link>
                 <button
@@ -388,7 +388,7 @@ const MangaGrid: React.FC<MangaGridProps> = ({ searchFilters }) => {
                   {actionLoading[`approve-${manga.id}`] ? (
                     <span className="text-xs">...</span>
                   ) : (
-                    <CheckCircleIcon className="w-5 h-5" />
+                    <CheckCircleIcon className="w-6 h-6" />
                   )}
                 </button>
                 <button
@@ -400,7 +400,7 @@ const MangaGrid: React.FC<MangaGridProps> = ({ searchFilters }) => {
                   {actionLoading[`delete-${manga.id}`] ? (
                     <span className="text-xs">...</span>
                   ) : (
-                    <TrashBinIcon className="w-5 h-5" />
+                    <TrashBinIcon className="w-6 h-6" />
                   )}
                 </button>
               </div>

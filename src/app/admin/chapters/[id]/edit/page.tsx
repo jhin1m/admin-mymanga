@@ -4,11 +4,9 @@ import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { apiService } from "@/services/api";
 import ChapterInfoForm from "@/components/manga/ChapterInfoForm";
-import ImageUploadZone from "@/components/manga/ImageUploadZone";
+import ImagePreviewZone, { UploadStatus } from "@/components/manga/ImagePreviewZone";
 import ImageList from "@/components/manga/ImageList";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
-import { ConfirmModal } from "@/components/ui/modal/ConfirmModal";
-import { useModal } from "@/hooks/useModal";
 import Alert from "@/components/ui/alert/Alert";
 
 interface Chapter {
@@ -33,12 +31,11 @@ const ChapterEditPage = () => {
   const [chapter, setChapter] = useState<Chapter | null>(null);
   const [chapterName, setChapterName] = useState("");
   const [images, setImages] = useState<string[]>([]);
+  const [pendingImages, setPendingImages] = useState<File[]>([]);
+  const [uploadStatuses, setUploadStatuses] = useState<Map<number, { status: UploadStatus; error?: string }>>(new Map());
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<string>("");
-
-  // Modal state
-  const { isOpen: isConfirmOpen, openModal: openConfirmModal, closeModal: closeConfirmModal } = useModal();
 
   // Alert state
   interface AlertState {
@@ -102,31 +99,106 @@ const ChapterEditPage = () => {
     fetchChapterData();
   }, [token, chapterId]);
 
-  const handleSaveClick = () => {
-    // Validation before opening modal
+  const handleSaveClick = async () => {
+    // Validation
     if (!chapterName.trim()) {
       showAlert("warning", "Thiếu thông tin", "Vui lòng nhập tên chương");
       return;
     }
-    openConfirmModal();
-  };
 
-  const handleConfirmSave = async () => {
     if (!token || !chapterId) return;
 
     setSaving(true);
-    try {
-      const response = await apiService.updateChapter(token, chapterId, {
-        name: chapterName,
-        image_urls: images,
-      });
+    setUploadStatuses(new Map()); // Reset upload statuses
 
-      if (response.success) {
-        showAlert("success", "Thành công", "Đã lưu thông tin chương thành công");
-        closeConfirmModal();
+    try {
+      // Step 1: Update chapter name and reorder existing images if needed
+      const nameChanged = chapterName !== chapter?.name;
+      const originalImageCount = chapter?.content?.length || 0;
+      const hasDeletedImages = images.length < originalImageCount;
+
+      // Always update chapter to sync name and existing image order
+      if (nameChanged || images.length > 0) {
+        const response = await apiService.updateChapter(token, chapterId, {
+          name: chapterName,
+          imageUrls: images.length > 0 ? images : undefined,
+        });
+
+        if (!response.success) {
+          showAlert("error", "Lỗi", response.message || "Có lỗi xảy ra khi lưu chương");
+          setSaving(false);
+          return;
+        }
+      }
+
+      // Step 2: Handle image deletion by clearing if needed
+      if (hasDeletedImages && pendingImages.length === 0) {
+        // User only deleted images without adding new ones
+        await apiService.clearChapterImages(token, chapterId);
+        showAlert("success", "Thành công", "Đã xóa ảnh thành công");
+        setPendingImages([]);
         await fetchChapterData();
-      } else {
-        showAlert("error", "Lỗi", response.message || "Có lỗi xảy ra khi lưu chương");
+        setSaving(false);
+        return;
+      }
+
+      // Step 3: Upload new pending images with status tracking
+      if (pendingImages.length > 0) {
+        const uploadErrors: string[] = [];
+        let successCount = 0;
+
+        for (let i = 0; i < pendingImages.length; i++) {
+          // Update status to uploading
+          setUploadStatuses(prev => {
+            const newMap = new Map(prev);
+            newMap.set(i, { status: "uploading" });
+            return newMap;
+          });
+
+          try {
+            await apiService.uploadChapterImage(token, chapterId, pendingImages[i]);
+
+            // Update status to success
+            setUploadStatuses(prev => {
+              const newMap = new Map(prev);
+              newMap.set(i, { status: "success" });
+              return newMap;
+            });
+            successCount++;
+          } catch (error: any) {
+            console.error(`Error uploading image ${i + 1}:`, error);
+            const errorMsg = error.message || "Lỗi tải lên";
+            uploadErrors.push(`Ảnh ${i + 1}: ${errorMsg}`);
+
+            // Update status to error
+            setUploadStatuses(prev => {
+              const newMap = new Map(prev);
+              newMap.set(i, { status: "error", error: errorMsg });
+              return newMap;
+            });
+          }
+        }
+
+        // Show result
+        if (uploadErrors.length > 0) {
+          if (successCount > 0) {
+            showAlert("warning", `Đã tải lên ${successCount}/${pendingImages.length} ảnh`, uploadErrors.join("\n"));
+          } else {
+            showAlert("error", "Tải lên thất bại", uploadErrors.join("\n"));
+          }
+        } else {
+          showAlert("success", "Thành công", "Đã lưu thông tin chương và tải lên tất cả ảnh thành công");
+        }
+
+        // Wait a bit to show final status, then clear
+        setTimeout(() => {
+          setPendingImages([]);
+          setUploadStatuses(new Map());
+          fetchChapterData();
+        }, 2000);
+      } else if (nameChanged || images.length > 0) {
+        showAlert("success", "Thành công", "Đã cập nhật chương thành công");
+        await fetchChapterData();
       }
     } catch (error: any) {
       console.error("Error saving chapter:", error);
@@ -139,20 +211,22 @@ const ChapterEditPage = () => {
     }
   };
 
-  const uploadImage = async (chapterId: string, file: File) => {
-    if (!token) throw new Error("No token");
-    await apiService.uploadChapterImage(token, chapterId, file);
+  const handleFilesSelected = (files: File[]) => {
+    setPendingImages(files);
   };
 
-  const handleUploadComplete = () => {
-    // Refresh chapter data to get updated images
-    fetchChapterData();
+  const handleRemovePendingFile = (index: number) => {
+    setPendingImages(prev => prev.filter((_, i) => i !== index));
   };
 
   const handleDeleteImage = async (imageUrl: string, index: number) => {
     // Virtual delete - only remove from local state
     // Changes will be saved when user clicks "Lưu"
     setImages(prevImages => prevImages.filter((_, i) => i !== index));
+  };
+
+  const handleReorderImages = (newOrder: string[]) => {
+    setImages(newOrder);
   };
 
   if (loading) {
@@ -209,29 +283,23 @@ const ChapterEditPage = () => {
           {/* Chapter Info Form */}
           <ChapterInfoForm name={chapterName} onChange={setChapterName} />
 
-          {/* Image Upload Zone */}
-          <ImageUploadZone
-            chapterId={chapterId}
-            onUploadComplete={handleUploadComplete}
-            uploadImageFn={uploadImage}
+          {/* Image Preview Zone - For new images */}
+          <ImagePreviewZone
+            pendingFiles={pendingImages}
+            onFilesSelected={handleFilesSelected}
+            onRemoveFile={handleRemovePendingFile}
+            disabled={saving}
+            uploadStatuses={uploadStatuses}
           />
 
-          {/* Image List */}
-          <ImageList images={images} onDelete={handleDeleteImage} />
+          {/* Image List - For existing images */}
+          <ImageList
+            images={images}
+            onDelete={handleDeleteImage}
+            onReorder={handleReorderImages}
+            disabled={saving}
+          />
         </div>
-
-        {/* Confirm Save Modal */}
-        <ConfirmModal
-          isOpen={isConfirmOpen}
-          onClose={closeConfirmModal}
-          onConfirm={handleConfirmSave}
-          title="Xác nhận lưu"
-          message={`Bạn có chắc chắn muốn lưu thay đổi cho chương "${chapterName}"?`}
-          confirmText="Lưu"
-          cancelText="Hủy"
-          confirmVariant="primary"
-          isLoading={saving}
-        />
       </div>
     </ProtectedRoute>
   );

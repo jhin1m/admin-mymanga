@@ -1,19 +1,34 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import Image from "next/image";
+import { DndProvider, useDrag, useDrop } from "react-dnd";
+import { HTML5Backend } from "react-dnd-html5-backend";
 
 interface ImageListProps {
   images: string[];
   onDelete?: (imageUrl: string, index: number) => void;
+  onReorder?: (newOrder: string[]) => void;
+  disabled?: boolean;
 }
 
-const ImageListItem: React.FC<{
+interface ImageListItemProps {
   imageUrl: string;
   index: number;
   onDelete?: (imageUrl: string, index: number) => void;
-}> = ({ imageUrl, index, onDelete }) => {
+  onMove?: (dragIndex: number, hoverIndex: number) => void;
+  disabled?: boolean;
+}
+
+const ImageListItem: React.FC<ImageListItemProps> = ({
+  imageUrl,
+  index,
+  onDelete,
+  onMove,
+  disabled = false,
+}) => {
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
 
   const handleDelete = () => {
     if (onDelete) {
@@ -21,8 +36,45 @@ const ImageListItem: React.FC<{
     }
   };
 
+  // Drag and Drop setup
+  const [{ isDragging }, drag] = useDrag({
+    type: "EXISTING_IMAGE",
+    item: { index },
+    canDrag: !disabled && !!onMove,
+    collect: (monitor) => ({
+      isDragging: monitor.isDragging(),
+    }),
+  });
+
+  const [{ isOver }, drop] = useDrop({
+    accept: "EXISTING_IMAGE",
+    hover: (item: { index: number }) => {
+      if (!ref.current || !onMove) return;
+      const dragIndex = item.index;
+      const hoverIndex = index;
+      if (dragIndex === hoverIndex) return;
+      onMove(dragIndex, hoverIndex);
+      item.index = hoverIndex;
+    },
+    collect: (monitor) => ({
+      isOver: monitor.isOver(),
+    }),
+  });
+
+  // Connect drag and drop refs
+  if (onMove && !disabled) {
+    drag(drop(ref));
+  }
+
   return (
-    <div className="relative bg-gray-800/50 rounded-lg overflow-hidden">
+    <div
+      ref={ref}
+      className={`relative bg-gray-800/50 rounded-lg overflow-hidden transition-all ${
+        isDragging ? "opacity-50 scale-95" : ""
+      } ${isOver ? "ring-2 ring-brand-500" : ""} ${
+        onMove && !disabled ? "cursor-move" : ""
+      }`}
+    >
       <div className="aspect-square relative">
         {/* Loading skeleton */}
         {isLoading && (
@@ -100,8 +152,22 @@ const ImageListItem: React.FC<{
         )}
       </div>
 
+      {/* Drag indicator icon */}
+      {onMove && !disabled && (
+        <div className="absolute top-2 left-2 p-1.5 bg-gray-700/80 rounded-lg">
+          <svg className="w-4 h-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M4 8h16M4 16h16"
+            />
+          </svg>
+        </div>
+      )}
+
       {/* Delete button */}
-      {onDelete && (
+      {onDelete && !disabled && (
         <button
           onClick={handleDelete}
           className="absolute top-2 right-2 p-1.5 text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors shadow-lg z-10"
@@ -126,33 +192,62 @@ const ImageListItem: React.FC<{
   );
 };
 
-const ImageList: React.FC<ImageListProps> = ({ images, onDelete }) => {
+const ImageList: React.FC<ImageListProps> = ({ images, onDelete, onReorder, disabled = false }) => {
   if (images.length === 0) {
     return null;
   }
 
-  return (
-    <div className="bg-gray-900 rounded-xl p-6 space-y-4">
-      <div className="flex justify-between items-center">
-        <h2 className="text-lg font-semibold text-white">
-          Danh sách hình ảnh
-        </h2>
-        <span className="text-sm text-gray-400">
-          Tổng: {images.length} ảnh
-        </span>
-      </div>
+  const handleMoveImage = (dragIndex: number, hoverIndex: number) => {
+    if (!onReorder) return;
 
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 max-h-[600px] overflow-y-auto">
-        {images.map((imageUrl, index) => (
-          <ImageListItem
-            key={`${imageUrl}-${index}`}
-            imageUrl={imageUrl}
-            index={index}
-            onDelete={onDelete}
-          />
-        ))}
+    const newImages = [...images];
+    const draggedImage = newImages[dragIndex];
+    newImages.splice(dragIndex, 1);
+    newImages.splice(hoverIndex, 0, draggedImage);
+    onReorder(newImages);
+  };
+
+  return (
+    <DndProvider backend={HTML5Backend}>
+      <div className="bg-gray-900 rounded-xl p-6 space-y-4">
+        <div className="flex justify-between items-center">
+          <h2 className="text-lg font-semibold text-white">
+            Danh sách hình ảnh
+          </h2>
+          <div className="flex items-center gap-3">
+            {onReorder && !disabled && (
+              <span className="text-xs text-gray-400 flex items-center gap-1">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M4 8h16M4 16h16"
+                  />
+                </svg>
+                Kéo thả để sắp xếp
+              </span>
+            )}
+            <span className="text-sm text-gray-400">
+              Tổng: {images.length} ảnh
+            </span>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 max-h-[600px] overflow-y-auto">
+          {images.map((imageUrl, index) => (
+            <ImageListItem
+              key={`${imageUrl}-${index}`}
+              imageUrl={imageUrl}
+              index={index}
+              onDelete={onDelete}
+              onMove={onReorder ? handleMoveImage : undefined}
+              disabled={disabled}
+            />
+          ))}
+        </div>
       </div>
-    </div>
+    </DndProvider>
   );
 };
 

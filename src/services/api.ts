@@ -49,7 +49,45 @@ class ApiService {
   }
 
   private async handleResponse<T>(response: Response): Promise<ApiResponse<T>> {
-    const data = await response.json();
+    // Handle 204 No Content - no body to parse
+    if (response.status === 204) {
+      return {
+        success: true,
+        data: null as any,
+        code: 204
+      };
+    }
+
+    // Check if response has content before parsing
+    const contentType = response.headers.get('content-type');
+    const hasJsonContent = contentType && contentType.includes('application/json');
+
+    let data: any;
+    if (hasJsonContent) {
+      try {
+        data = await response.json();
+      } catch (error) {
+        // If JSON parsing fails but response is ok, return success
+        if (response.ok) {
+          return {
+            success: true,
+            data: null as any,
+            code: response.status
+          };
+        }
+        throw error;
+      }
+    } else {
+      // No JSON content
+      if (response.ok) {
+        return {
+          success: true,
+          data: null as any,
+          code: response.status
+        };
+      }
+      data = {};
+    }
 
     if (!response.ok) {
       console.error('API Error Response:', data);
@@ -325,14 +363,23 @@ class ApiService {
     return this.handleResponse(response);
   }
 
-  async updateChapter(token: string, chapterId: string, data: { name: string; image_urls: string[] }): Promise<ApiResponse<any>> {
+  async updateChapter(
+    token: string,
+    chapterId: string,
+    data: { name: string; imageUrls?: string[] }
+  ): Promise<ApiResponse<any>> {
     const formData = new FormData();
     formData.append('name', data.name);
 
-    // Add image URLs array
-    data.image_urls.forEach((url) => {
-      formData.append('image_urls[]', url);
-    });
+    // If imageUrls provided, use them for reordering; otherwise send empty array
+    if (data.imageUrls && data.imageUrls.length > 0) {
+      data.imageUrls.forEach((url) => {
+        formData.append('image_urls[]', url);
+      });
+    } else {
+      // Backend expects image_urls field even if empty
+      formData.append('image_urls', JSON.stringify([]));
+    }
 
     const headers: HeadersInit = {
       'Accept': 'application/json',
@@ -351,6 +398,23 @@ class ApiService {
     return this.handleResponse(response);
   }
 
+  async clearChapterImages(token: string, chapterId: string): Promise<ApiResponse<any>> {
+    const headers: HeadersInit = {
+      'Accept': 'application/json',
+    };
+
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    const response = await fetch(`${API_BASE_URL}/chapters/${chapterId}/clr-img`, {
+      method: 'DELETE',
+      headers: this.getHeaders(token),
+    });
+
+    return this.handleResponse(response);
+  }
+
   async uploadChapterImage(token: string, chapterId: string, file: File): Promise<ApiResponse<any>> {
     const formData = new FormData();
     formData.append('image', file);
@@ -364,7 +428,7 @@ class ApiService {
     }
 
     const response = await fetch(`${API_BASE_URL}/chapters/${chapterId}/add-img?_method=put`, {
-      method: 'PUT',
+      method: 'POST',
       headers: headers,
       body: formData,
     });
@@ -494,6 +558,18 @@ class ApiService {
     urlParams.append('filter[name]', query);
 
     const response = await fetch(`${API_BASE_URL}/users?${urlParams.toString()}`, {
+      method: 'GET',
+      headers: this.getHeaders(token),
+    });
+
+    return this.handleResponse(response);
+  }
+
+  async searchMangas(token: string, query: string): Promise<ApiResponse<any>> {
+    const urlParams = new URLSearchParams();
+    urlParams.append('filter[name]', query);
+
+    const response = await fetch(`${API_BASE_URL}/mangas?${urlParams.toString()}`, {
       method: 'GET',
       headers: this.getHeaders(token),
     });

@@ -1,10 +1,10 @@
 "use client";
-import Image from "next/image";
-import Link from "next/link";
+// import Image from "next/image";
+// import Link from "next/link";
 import React, { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { Dropdown } from "../ui/dropdown/Dropdown";
-import { DropdownItem } from "../ui/dropdown/DropdownItem";
+// import { DropdownItem } from "../ui/dropdown/DropdownItem";
 
 export default function UserDropdown() {
   const [isOpen, setIsOpen] = useState(false);
@@ -29,14 +29,14 @@ function toggleDropdown(e: React.MouseEvent<HTMLButtonElement, MouseEvent>) {
         onClick={toggleDropdown} 
         className="flex items-center text-gray-700 dark:text-gray-400 dropdown-toggle"
       >
-        <span className="mr-3 overflow-hidden rounded-full h-11 w-11">
+        {/* <span className="mr-3 overflow-hidden rounded-full h-11 w-11">
           <Image
             width={44}
             height={44}
             src="/images/user/owner.jpg"
             alt="User"
           />
-        </span>
+        </span> */}
 
         <span className="block mr-1 font-medium text-theme-sm">{user?.name || "Admin"}</span>
 
@@ -75,7 +75,7 @@ function toggleDropdown(e: React.MouseEvent<HTMLButtonElement, MouseEvent>) {
         </div>
 
         <ul className="flex flex-col gap-1 pt-4 pb-3 border-b border-gray-200 dark:border-gray-800">
-          <li>
+          {/* <li>
             <DropdownItem
               onItemClick={closeDropdown}
               tag="a"
@@ -149,7 +149,7 @@ function toggleDropdown(e: React.MouseEvent<HTMLButtonElement, MouseEvent>) {
               </svg>
               Support
             </DropdownItem>
-          </li>
+          </li> */}
         </ul>
         <button
           onClick={handleLogout}
