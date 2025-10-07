@@ -60,7 +60,7 @@ const navItems: NavItem[] = [
   {
     icon: <ListIcon />,
     name: "Doujinshi",
-    path: "/admin/doujinshi",
+    path: "/admin/doujinshis",
   },
   {
     icon: <ListIcon />,

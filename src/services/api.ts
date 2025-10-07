@@ -576,6 +576,148 @@ class ApiService {
 
     return this.handleResponse(response);
   }
+
+  // Artists management
+  async getArtists(token: string, params?: Record<string, any>): Promise<ApiResponse<any>> {
+    let queryString = '';
+    if (params) {
+      const urlParams = new URLSearchParams();
+
+      // Handle standard parameters
+      if (params.page) urlParams.append('page', params.page.toString());
+      if (params.per_page) urlParams.append('per_page', params.per_page.toString());
+      if (params.sort) urlParams.append('sort', params.sort);
+      if (params.include) urlParams.append('include', params.include);
+
+      // Handle filter parameters with filter[field] format
+      if (params.filters) {
+        Object.keys(params.filters).forEach(key => {
+          const value = params.filters[key];
+          if (value && value.toString().trim() !== '') {
+            urlParams.append(`filter[${key}]`, value.toString().trim());
+          }
+        });
+      }
+
+      queryString = urlParams.toString() ? '?' + urlParams.toString() : '';
+    }
+
+    const response = await fetch(`${API_BASE_URL}/artists${queryString}`, {
+      method: 'GET',
+      headers: this.getHeaders(token),
+    });
+
+    return this.handleResponse(response);
+  }
+
+  async deleteArtist(token: string, artistId: string): Promise<ApiResponse<any>> {
+    const response = await fetch(`${API_BASE_URL}/artists/${artistId}`, {
+      method: 'DELETE',
+      headers: this.getHeaders(token),
+    });
+
+    // Handle 204 No Content response
+    if (response.status === 204) {
+      return {
+        success: true,
+        message: 'Artist deleted successfully',
+        code: 204,
+      };
+    }
+
+    return this.handleResponse(response);
+  }
+
+  async updateArtist(token: string, artistId: string, data: { name: string }): Promise<ApiResponse<any>> {
+    const response = await fetch(`${API_BASE_URL}/artists/${artistId}`, {
+      method: 'PUT',
+      headers: this.getHeaders(token),
+      body: JSON.stringify(data),
+    });
+
+    return this.handleResponse(response);
+  }
+
+  async createArtist(token: string, data: { name: string }): Promise<ApiResponse<any>> {
+    const response = await fetch(`${API_BASE_URL}/artists`, {
+      method: 'POST',
+      headers: this.getHeaders(token),
+      body: JSON.stringify(data),
+    });
+
+    return this.handleResponse(response);
+  }
+
+  // Doujinshis management
+  async getDoujinshis(token: string, params?: Record<string, any>): Promise<ApiResponse<any>> {
+    let queryString = '';
+    if (params) {
+      const urlParams = new URLSearchParams();
+
+      // Handle standard parameters
+      if (params.page) urlParams.append('page', params.page.toString());
+      if (params.per_page) urlParams.append('per_page', params.per_page.toString());
+      if (params.sort) urlParams.append('sort', params.sort);
+      if (params.include) urlParams.append('include', params.include);
+
+      // Handle filter parameters with filter[field] format
+      if (params.filters) {
+        Object.keys(params.filters).forEach(key => {
+          const value = params.filters[key];
+          if (value && value.toString().trim() !== '') {
+            urlParams.append(`filter[${key}]`, value.toString().trim());
+          }
+        });
+      }
+
+      queryString = urlParams.toString() ? '?' + urlParams.toString() : '';
+    }
+
+    const response = await fetch(`${API_BASE_URL}/doujinshis${queryString}`, {
+      method: 'GET',
+      headers: this.getHeaders(token),
+    });
+
+    return this.handleResponse(response);
+  }
+
+  async deleteDoujinshi(token: string, doujinshiId: string): Promise<ApiResponse<any>> {
+    const response = await fetch(`${API_BASE_URL}/doujinshis/${doujinshiId}`, {
+      method: 'DELETE',
+      headers: this.getHeaders(token),
+    });
+
+    // Handle 204 No Content response
+    if (response.status === 204) {
+      return {
+        success: true,
+        message: 'Doujinshi deleted successfully',
+        code: 204,
+      };
+    }
+
+    return this.handleResponse(response);
+  }
+
+  async updateDoujinshi(token: string, doujinshiId: string, data: { name: string }): Promise<ApiResponse<any>> {
+    const response = await fetch(`${API_BASE_URL}/doujinshis/${doujinshiId}`, {
+      method: 'PUT',
+      headers: this.getHeaders(token),
+      body: JSON.stringify(data),
+    });
+
+    return this.handleResponse(response);
+  }
+
+  async createDoujinshi(token: string, data: { name: string }): Promise<ApiResponse<any>> {
+    const response = await fetch(`${API_BASE_URL}/doujinshis`, {
+      method: 'POST',
+      headers: this.getHeaders(token),
+      body: JSON.stringify(data),
+    });
+
+    return this.handleResponse(response);
+  }
 }
 
 export const apiService = new ApiService();
