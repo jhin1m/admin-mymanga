@@ -80,7 +80,7 @@ const navItems: NavItem[] = [
   {
     icon: <GroupIcon />,
     name: "Bạn đồng hành",
-    path: "/admin/companions",
+    path: "/admin/pets",
   },
   {
     icon: <ChatIcon />,

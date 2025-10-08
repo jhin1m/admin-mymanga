@@ -10,20 +10,22 @@ import {
 import Button from "@/components/ui/button/Button";
 import Pagination from "@/components/ui/pagination/Pagination";
 import { ConfirmModal } from "@/components/ui/modal/ConfirmModal";
-import { DoujinshiFormModal } from "@/components/ui/modal/DoujinshiFormModal";
+import { PetFormModal } from "@/components/ui/modal/PetFormModal";
 import { apiService } from "@/services/api";
 import { useAuth } from "@/context/AuthContext";
 
-interface Doujinshi {
+interface Pet {
   id: string;
   name: string;
-  slug: string;
+  price: number;
   user_id: string;
   created_at: string;
   updated_at: string;
+  image_full_url: string;
   user?: {
     id: string;
     name: string;
+    email: string;
   };
 }
 
@@ -39,13 +41,13 @@ interface SearchFilters {
   name: string;
 }
 
-interface DoujinshisTableProps {
+interface PetsTableProps {
   searchFilters?: SearchFilters;
 }
 
-const DoujinshisTable: React.FC<DoujinshisTableProps> = ({ searchFilters }) => {
+const PetsTable: React.FC<PetsTableProps> = ({ searchFilters }) => {
   const { token } = useAuth();
-  const [doujinshis, setDoujinshis] = useState<Doujinshi[]>([]);
+  const [pets, setPets] = useState<Pet[]>([]);
   const [pagination, setPagination] = useState<PaginationData>({
     count: 0,
     total: 0,
@@ -55,13 +57,13 @@ const DoujinshisTable: React.FC<DoujinshisTableProps> = ({ searchFilters }) => {
   });
   const [loading, setLoading] = useState(true);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
-  const [doujinshiToDelete, setDoujinshiToDelete] = useState<Doujinshi | null>(null);
+  const [petToDelete, setPetToDelete] = useState<Pet | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
 
   // Form modal states
   const [formModalOpen, setFormModalOpen] = useState(false);
   const [formMode, setFormMode] = useState<"create" | "edit">("create");
-  const [doujinshiToEdit, setDoujinshiToEdit] = useState<Doujinshi | null>(null);
+  const [petToEdit, setPetToEdit] = useState<Pet | null>(null);
   const [formLoading, setFormLoading] = useState(false);
 
   const formatDate = (dateString: string) => {
@@ -76,7 +78,11 @@ const DoujinshisTable: React.FC<DoujinshisTableProps> = ({ searchFilters }) => {
     });
   };
 
-  const fetchDoujinshis = useCallback(
+  const formatPrice = (price: number) => {
+    return price.toLocaleString("vi-VN");
+  };
+
+  const fetchPets = useCallback(
     async (page = 1, filters?: Partial<SearchFilters>) => {
       if (!token) return;
 
@@ -102,10 +108,10 @@ const DoujinshisTable: React.FC<DoujinshisTableProps> = ({ searchFilters }) => {
           }
         }
 
-        const response = await apiService.getDoujinshis(token, params);
+        const response = await apiService.getPets(token, params);
 
         if (response.success && response.data) {
-          setDoujinshis(response.data);
+          setPets(response.data);
           if (response.pagination) {
             setPagination({
               count: response.pagination.count,
@@ -117,7 +123,7 @@ const DoujinshisTable: React.FC<DoujinshisTableProps> = ({ searchFilters }) => {
           }
         }
       } catch (error) {
-        console.error("Error fetching doujinshis:", error);
+        console.error("Error fetching pets:", error);
       } finally {
         setLoading(false);
       }
@@ -126,66 +132,74 @@ const DoujinshisTable: React.FC<DoujinshisTableProps> = ({ searchFilters }) => {
   );
 
   useEffect(() => {
-    fetchDoujinshis(1, searchFilters);
+    fetchPets(1, searchFilters);
   }, [searchFilters]);
 
   const handlePageChange = (page: number) => {
-    fetchDoujinshis(page, searchFilters);
+    fetchPets(page, searchFilters);
   };
 
-  const handleDeleteClick = (doujinshi: Doujinshi) => {
-    setDoujinshiToDelete(doujinshi);
+  const handleDeleteClick = (pet: Pet) => {
+    setPetToDelete(pet);
     setDeleteModalOpen(true);
   };
 
   const handleDeleteConfirm = async () => {
-    if (!token || !doujinshiToDelete) return;
+    if (!token || !petToDelete) return;
 
     setDeleteLoading(true);
     try {
-      await apiService.deleteDoujinshi(token, doujinshiToDelete.id);
+      await apiService.deletePet(token, petToDelete.id);
       setDeleteModalOpen(false);
-      setDoujinshiToDelete(null);
+      setPetToDelete(null);
       // Refresh the list after deletion
-      await fetchDoujinshis(pagination.currentPage, searchFilters);
+      await fetchPets(pagination.currentPage, searchFilters);
     } catch (error) {
-      console.error("Error deleting doujinshi:", error);
-      alert("Có lỗi xảy ra khi xóa doujinshi");
+      console.error("Error deleting pet:", error);
+      alert("Có lỗi xảy ra khi xóa bạn đồng hành");
     } finally {
       setDeleteLoading(false);
     }
   };
 
-  const handleEditClick = (doujinshiId: string) => {
-    const doujinshi = doujinshis.find((d) => d.id === doujinshiId);
-    if (!doujinshi) return;
+  const handleEditClick = (petId: string) => {
+    const pet = pets.find((p) => p.id === petId);
+    if (!pet) return;
 
-    setDoujinshiToEdit(doujinshi);
+    setPetToEdit(pet);
     setFormMode("edit");
     setFormModalOpen(true);
   };
 
   const handleCreateNew = () => {
-    setDoujinshiToEdit(null);
+    setPetToEdit(null);
     setFormMode("create");
     setFormModalOpen(true);
   };
 
-  const handleFormSubmit = async (name: string) => {
+  const handleFormSubmit = async (data: { name: string; price: number; image?: File | null }) => {
     if (!token) return;
 
     setFormLoading(true);
     try {
+      const formData = new FormData();
+      formData.append("name", data.name);
+      formData.append("price", data.price.toString());
+
+      if (data.image) {
+        formData.append("image", data.image);
+      }
+
       if (formMode === "create") {
-        await apiService.createDoujinshi(token, { name });
-      } else if (formMode === "edit" && doujinshiToEdit) {
-        await apiService.updateDoujinshi(token, doujinshiToEdit.id, { name });
+        await apiService.createPet(token, formData);
+      } else if (formMode === "edit" && petToEdit) {
+        await apiService.updatePet(token, petToEdit.id, formData);
       }
 
       setFormModalOpen(false);
-      setDoujinshiToEdit(null);
+      setPetToEdit(null);
       // Refresh the list after create/update
-      await fetchDoujinshis(pagination.currentPage, searchFilters);
+      await fetchPets(pagination.currentPage, searchFilters);
     } catch (error: any) {
       console.error("Error submitting form:", error);
       const errorMessage =
@@ -205,7 +219,7 @@ const DoujinshisTable: React.FC<DoujinshisTableProps> = ({ searchFilters }) => {
               Đang tải dữ liệu...
             </div>
           </div>
-        ) : doujinshis.length === 0 ? (
+        ) : pets.length === 0 ? (
           <>
             <div className="flex items-center justify-end">
               <Button size="md" variant="primary" onClick={handleCreateNew}>
@@ -215,7 +229,7 @@ const DoujinshisTable: React.FC<DoujinshisTableProps> = ({ searchFilters }) => {
             <div className="flex items-center justify-center p-8">
               <div className="text-center">
                 <div className="text-gray-500 dark:text-gray-400 mb-2">
-                  Không tìm thấy doujinshi nào
+                  Không tìm thấy bạn đồng hành nào
                 </div>
                 <div className="text-sm text-gray-400 dark:text-gray-500">
                   Thử thay đổi điều kiện tìm kiếm hoặc xóa bộ lọc
@@ -233,7 +247,7 @@ const DoujinshisTable: React.FC<DoujinshisTableProps> = ({ searchFilters }) => {
 
             <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03]">
               <div className="max-w-full overflow-x-auto">
-                <div className="min-w-[800px]">
+                <div className="min-w-[1000px]">
                   <Table>
                     <TableHeader className="border-b border-gray-100 dark:border-white/[0.05]">
                       <TableRow>
@@ -241,13 +255,19 @@ const DoujinshisTable: React.FC<DoujinshisTableProps> = ({ searchFilters }) => {
                           isHeader
                           className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
                         >
-                          ID
+                          Preview
                         </TableCell>
                         <TableCell
                           isHeader
                           className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
                         >
-                          Tên doujinshi
+                          Tên bạn đồng hành
+                        </TableCell>
+                        <TableCell
+                          isHeader
+                          className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
+                        >
+                          Giá
                         </TableCell>
                         <TableCell
                           isHeader
@@ -271,26 +291,40 @@ const DoujinshisTable: React.FC<DoujinshisTableProps> = ({ searchFilters }) => {
                     </TableHeader>
 
                     <TableBody className="divide-y divide-gray-100 dark:divide-white/[0.05]">
-                      {doujinshis.map((doujinshi) => (
-                        <TableRow key={doujinshi.id}>
+                      {pets.map((pet) => (
+                        <TableRow key={pet.id}>
                           <TableCell className="px-5 py-4 text-start">
-                            <span className="text-theme-sm font-mono text-gray-600 dark:text-gray-400">
-                              {doujinshi.id.substring(0, 8)}...
-                            </span>
+                            <div className="flex items-center justify-center w-[80px] h-[80px] overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+                              <img
+                                src={pet.image_full_url}
+                                alt={pet.name}
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                  const target = e.target as HTMLImageElement;
+                                  target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60' viewBox='0 0 60 60'%3E%3Crect width='60' height='60' fill='%23ddd'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='monospace' font-size='14' fill='%23999'%3ENo Image%3C/text%3E%3C/svg%3E";
+                                }}
+                              />
+                            </div>
                           </TableCell>
 
                           <TableCell className="px-5 py-4 text-start">
                             <span className="block font-medium text-gray-800 text-theme-sm dark:text-white/90">
-                              {doujinshi.name}
+                              {pet.name}
+                            </span>
+                          </TableCell>
+
+                          <TableCell className="px-5 py-4 text-start">
+                            <span className="block text-gray-700 text-theme-sm dark:text-gray-300">
+                              {formatPrice(pet.price)}
                             </span>
                           </TableCell>
 
                           <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
-                            {doujinshi.user?.name || "N/A"}
+                            {pet.user?.name || "N/A"}
                           </TableCell>
 
                           <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
-                            {formatDate(doujinshi.created_at)}
+                            {formatDate(pet.created_at)}
                           </TableCell>
 
                           <TableCell className="px-4 py-3 text-start">
@@ -298,7 +332,7 @@ const DoujinshisTable: React.FC<DoujinshisTableProps> = ({ searchFilters }) => {
                               <Button
                                 size="sm"
                                 variant="primary"
-                                onClick={() => handleEditClick(doujinshi.id)}
+                                onClick={() => handleEditClick(pet.id)}
                                 className="text-xs"
                               >
                                 Sửa
@@ -307,7 +341,7 @@ const DoujinshisTable: React.FC<DoujinshisTableProps> = ({ searchFilters }) => {
                               <Button
                                 size="sm"
                                 variant="outline"
-                                onClick={() => handleDeleteClick(doujinshi)}
+                                onClick={() => handleDeleteClick(pet)}
                                 className="text-xs text-red-600 hover:text-red-700 hover:border-red-300"
                               >
                                 Xóa
@@ -338,25 +372,29 @@ const DoujinshisTable: React.FC<DoujinshisTableProps> = ({ searchFilters }) => {
         isOpen={deleteModalOpen}
         onClose={() => {
           setDeleteModalOpen(false);
-          setDoujinshiToDelete(null);
+          setPetToDelete(null);
         }}
         onConfirm={handleDeleteConfirm}
         title="Xác nhận xóa"
-        message={`Bạn có chắc chắn muốn xóa doujinshi "${doujinshiToDelete?.name}"?\nHành động này không thể hoàn tác.`}
+        message={`Bạn có chắc chắn muốn xóa bạn đồng hành "${petToDelete?.name}"?\nHành động này không thể hoàn tác.`}
         confirmText="Xóa"
         cancelText="Hủy"
         confirmVariant="danger"
         isLoading={deleteLoading}
       />
 
-      <DoujinshiFormModal
+      <PetFormModal
         isOpen={formModalOpen}
         onClose={() => {
           setFormModalOpen(false);
-          setDoujinshiToEdit(null);
+          setPetToEdit(null);
         }}
         onSubmit={handleFormSubmit}
-        initialName={doujinshiToEdit?.name || ""}
+        initialData={petToEdit ? {
+          name: petToEdit.name,
+          price: petToEdit.price,
+          image_full_url: petToEdit.image_full_url,
+        } : undefined}
         mode={formMode}
         isLoading={formLoading}
       />
@@ -364,4 +402,4 @@ const DoujinshisTable: React.FC<DoujinshisTableProps> = ({ searchFilters }) => {
   );
 };
 
-export default DoujinshisTable;
+export default PetsTable;

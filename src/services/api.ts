@@ -974,6 +974,96 @@ class ApiService {
 
     return this.handleResponse(response);
   }
+
+  // Pets management
+  async getPets(token: string, params?: Record<string, any>): Promise<ApiResponse<any>> {
+    let queryString = '';
+    if (params) {
+      const urlParams = new URLSearchParams();
+
+      // Handle standard parameters
+      if (params.page) urlParams.append('page', params.page.toString());
+      if (params.per_page) urlParams.append('per_page', params.per_page.toString());
+      if (params.sort) urlParams.append('sort', params.sort);
+      if (params.include) urlParams.append('include', params.include);
+
+      // Handle filter parameters with filter[field] format
+      if (params.filters) {
+        Object.keys(params.filters).forEach(key => {
+          const value = params.filters[key];
+          if (value && value.toString().trim() !== '') {
+            urlParams.append(`filter[${key}]`, value.toString().trim());
+          }
+        });
+      }
+
+      queryString = urlParams.toString() ? '?' + urlParams.toString() : '';
+    }
+
+    const response = await fetch(`${API_BASE_URL}/pets${queryString}`, {
+      method: 'GET',
+      headers: this.getHeaders(token),
+    });
+
+    return this.handleResponse(response);
+  }
+
+  async deletePet(token: string, petId: string): Promise<ApiResponse<any>> {
+    const response = await fetch(`${API_BASE_URL}/pets/${petId}`, {
+      method: 'DELETE',
+      headers: this.getHeaders(token),
+    });
+
+    // Handle 204 No Content response
+    if (response.status === 204) {
+      return {
+        success: true,
+        message: 'Pet deleted successfully',
+        code: 204,
+      };
+    }
+
+    return this.handleResponse(response);
+  }
+
+  async updatePet(token: string, petId: string, formData: FormData): Promise<ApiResponse<any>> {
+    const headers: HeadersInit = {
+      'Accept': 'application/json',
+    };
+
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    // Add _method field to FormData for Laravel PUT method spoofing
+    formData.append('_method', 'put');
+
+    const response = await fetch(`${API_BASE_URL}/pets/${petId}`, {
+      method: 'POST', // Laravel uses POST with _method=PUT for multipart
+      headers: headers,
+      body: formData,
+    });
+
+    return this.handleResponse(response);
+  }
+
+  async createPet(token: string, formData: FormData): Promise<ApiResponse<any>> {
+    const headers: HeadersInit = {
+      'Accept': 'application/json',
+    };
+
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    const response = await fetch(`${API_BASE_URL}/pets`, {
+      method: 'POST',
+      headers: headers,
+      body: formData,
+    });
+
+    return this.handleResponse(response);
+  }
 }
 
 export const apiService = new ApiService();

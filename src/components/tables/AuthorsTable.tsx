@@ -196,145 +196,143 @@ const AuthorsTable: React.FC<AuthorsTableProps> = ({ searchFilters }) => {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center p-8">
-        <div className="text-gray-500 dark:text-gray-400">
-          Đang tải dữ liệu...
-        </div>
-      </div>
-    );
-  }
-
-  if (!loading && artists.length === 0) {
-    return (
-      <div className="space-y-4">
-        <div className="flex items-center justify-end">
-          <Button size="md" variant="primary" onClick={handleCreateNew}>
-            Tạo mới
-          </Button>
-        </div>
-        <div className="flex items-center justify-center p-8">
-          <div className="text-center">
-            <div className="text-gray-500 dark:text-gray-400 mb-2">
-              Không tìm thấy tác giả nào
-            </div>
-            <div className="text-sm text-gray-400 dark:text-gray-500">
-              Thử thay đổi điều kiện tìm kiếm hoặc xóa bộ lọc
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-end">
-        <Button size="md" variant="primary" onClick={handleCreateNew}>
-          Tạo mới
-        </Button>
-      </div>
-
-      <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03]">
-        <div className="max-w-full overflow-x-auto">
-          <div className="min-w-[800px]">
-            <Table>
-              <TableHeader className="border-b border-gray-100 dark:border-white/[0.05]">
-                <TableRow>
-                  <TableCell
-                    isHeader
-                    className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
-                  >
-                    ID
-                  </TableCell>
-                  <TableCell
-                    isHeader
-                    className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
-                  >
-                    Tên tác giả
-                  </TableCell>
-                  <TableCell
-                    isHeader
-                    className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
-                  >
-                    Tạo bởi
-                  </TableCell>
-                  <TableCell
-                    isHeader
-                    className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
-                  >
-                    Tạo lúc
-                  </TableCell>
-                  <TableCell
-                    isHeader
-                    className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
-                  >
-                    Hành động
-                  </TableCell>
-                </TableRow>
-              </TableHeader>
-
-              <TableBody className="divide-y divide-gray-100 dark:divide-white/[0.05]">
-                {artists.map((artist) => (
-                  <TableRow key={artist.id}>
-                    <TableCell className="px-5 py-4 text-start">
-                      <span className="text-theme-sm font-mono text-gray-600 dark:text-gray-400">
-                        {artist.id.substring(0, 8)}...
-                      </span>
-                    </TableCell>
-
-                    <TableCell className="px-5 py-4 text-start">
-                      <span className="block font-medium text-gray-800 text-theme-sm dark:text-white/90">
-                        {artist.name}
-                      </span>
-                    </TableCell>
-
-                    <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
-                      {artist.user?.name || "N/A"}
-                    </TableCell>
-
-                    <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
-                      {formatDate(artist.created_at)}
-                    </TableCell>
-
-                    <TableCell className="px-4 py-3 text-start">
-                      <div className="flex items-center gap-2">
-                        <Button
-                          size="sm"
-                          variant="primary"
-                          onClick={() => handleEditClick(artist.id)}
-                          className="text-xs"
-                        >
-                          Sửa
-                        </Button>
-
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleDeleteClick(artist)}
-                          className="text-xs text-red-600 hover:text-red-700 hover:border-red-300"
-                        >
-                          Xóa
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+    <>
+      <div className="space-y-4">
+        {loading ? (
+          <div className="flex items-center justify-center p-8">
+            <div className="text-gray-500 dark:text-gray-400">
+              Đang tải dữ liệu...
+            </div>
           </div>
-        </div>
-      </div>
+        ) : artists.length === 0 ? (
+          <>
+            <div className="flex items-center justify-end">
+              <Button size="md" variant="primary" onClick={handleCreateNew}>
+                Tạo mới
+              </Button>
+            </div>
+            <div className="flex items-center justify-center p-8">
+              <div className="text-center">
+                <div className="text-gray-500 dark:text-gray-400 mb-2">
+                  Không tìm thấy tác giả nào
+                </div>
+                <div className="text-sm text-gray-400 dark:text-gray-500">
+                  Thử thay đổi điều kiện tìm kiếm hoặc xóa bộ lọc
+                </div>
+              </div>
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="flex items-center justify-end">
+              <Button size="md" variant="primary" onClick={handleCreateNew}>
+                Tạo mới
+              </Button>
+            </div>
 
-      <Pagination
-        currentPage={pagination.currentPage}
-        totalPages={pagination.totalPages}
-        total={pagination.total}
-        perPage={pagination.perPage}
-        onPageChange={handlePageChange}
-        loading={loading}
-      />
+            <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03]">
+              <div className="max-w-full overflow-x-auto">
+                <div className="min-w-[800px]">
+                  <Table>
+                    <TableHeader className="border-b border-gray-100 dark:border-white/[0.05]">
+                      <TableRow>
+                        <TableCell
+                          isHeader
+                          className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
+                        >
+                          ID
+                        </TableCell>
+                        <TableCell
+                          isHeader
+                          className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
+                        >
+                          Tên tác giả
+                        </TableCell>
+                        <TableCell
+                          isHeader
+                          className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
+                        >
+                          Tạo bởi
+                        </TableCell>
+                        <TableCell
+                          isHeader
+                          className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
+                        >
+                          Tạo lúc
+                        </TableCell>
+                        <TableCell
+                          isHeader
+                          className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
+                        >
+                          Hành động
+                        </TableCell>
+                      </TableRow>
+                    </TableHeader>
+
+                    <TableBody className="divide-y divide-gray-100 dark:divide-white/[0.05]">
+                      {artists.map((artist) => (
+                        <TableRow key={artist.id}>
+                          <TableCell className="px-5 py-4 text-start">
+                            <span className="text-theme-sm font-mono text-gray-600 dark:text-gray-400">
+                              {artist.id.substring(0, 8)}...
+                            </span>
+                          </TableCell>
+
+                          <TableCell className="px-5 py-4 text-start">
+                            <span className="block font-medium text-gray-800 text-theme-sm dark:text-white/90">
+                              {artist.name}
+                            </span>
+                          </TableCell>
+
+                          <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
+                            {artist.user?.name || "N/A"}
+                          </TableCell>
+
+                          <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
+                            {formatDate(artist.created_at)}
+                          </TableCell>
+
+                          <TableCell className="px-4 py-3 text-start">
+                            <div className="flex items-center gap-2">
+                              <Button
+                                size="sm"
+                                variant="primary"
+                                onClick={() => handleEditClick(artist.id)}
+                                className="text-xs"
+                              >
+                                Sửa
+                              </Button>
+
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleDeleteClick(artist)}
+                                className="text-xs text-red-600 hover:text-red-700 hover:border-red-300"
+                              >
+                                Xóa
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </div>
+            </div>
+
+            <Pagination
+              currentPage={pagination.currentPage}
+              totalPages={pagination.totalPages}
+              total={pagination.total}
+              perPage={pagination.perPage}
+              onPageChange={handlePageChange}
+              loading={loading}
+            />
+          </>
+        )}
+      </div>
 
       <ConfirmModal
         isOpen={deleteModalOpen}
@@ -362,7 +360,7 @@ const AuthorsTable: React.FC<AuthorsTableProps> = ({ searchFilters }) => {
         mode={formMode}
         isLoading={formLoading}
       />
-    </div>
+    </>
   );
 };
 
