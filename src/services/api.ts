@@ -487,6 +487,84 @@ class ApiService {
     return this.handleResponse(response);
   }
 
+  async getGenresWithParams(token: string, params?: Record<string, any>): Promise<ApiResponse<any>> {
+    let queryString = '';
+    if (params) {
+      const urlParams = new URLSearchParams();
+
+      // Handle standard parameters
+      if (params.page) urlParams.append('page', params.page.toString());
+      if (params.per_page) urlParams.append('per_page', params.per_page.toString());
+      if (params.sort) urlParams.append('sort', params.sort);
+
+      // Handle filter parameters with filter[field] format
+      if (params.filters) {
+        Object.keys(params.filters).forEach(key => {
+          const value = params.filters[key];
+          if (value && value.toString().trim() !== '') {
+            urlParams.append(`filter[${key}]`, value.toString().trim());
+          }
+        });
+      }
+
+      queryString = urlParams.toString() ? '?' + urlParams.toString() : '';
+    }
+
+    const response = await fetch(`${API_BASE_URL}/genres${queryString}`, {
+      method: 'GET',
+      headers: this.getHeaders(token),
+    });
+
+    return this.handleResponse(response);
+  }
+
+  async getGenreById(token: string, genreId: string): Promise<ApiResponse<any>> {
+    const response = await fetch(`${API_BASE_URL}/genres/${genreId}`, {
+      method: 'GET',
+      headers: this.getHeaders(token),
+    });
+
+    return this.handleResponse(response);
+  }
+
+  async createGenre(token: string, data: { name: string }): Promise<ApiResponse<any>> {
+    const response = await fetch(`${API_BASE_URL}/genres`, {
+      method: 'POST',
+      headers: this.getHeaders(token),
+      body: JSON.stringify(data),
+    });
+
+    return this.handleResponse(response);
+  }
+
+  async updateGenre(token: string, genreId: string, data: Record<string, any>): Promise<ApiResponse<any>> {
+    const response = await fetch(`${API_BASE_URL}/genres/${genreId}`, {
+      method: 'PUT',
+      headers: this.getHeaders(token),
+      body: JSON.stringify(data),
+    });
+
+    return this.handleResponse(response);
+  }
+
+  async deleteGenre(token: string, genreId: string): Promise<ApiResponse<any>> {
+    const response = await fetch(`${API_BASE_URL}/genres/${genreId}`, {
+      method: 'DELETE',
+      headers: this.getHeaders(token),
+    });
+
+    // Handle 204 No Content response
+    if (response.status === 204) {
+      return {
+        success: true,
+        message: 'Genre deleted successfully',
+        code: 204,
+      };
+    }
+
+    return this.handleResponse(response);
+  }
+
   // User management actions
   async banUser(token: string, userId: string, banDuration?: string): Promise<ApiResponse<any>> {
     const response = await fetch(`${API_BASE_URL}/users/${userId}/ban`, {
@@ -644,6 +722,184 @@ class ApiService {
       headers: this.getHeaders(token),
       body: JSON.stringify(data),
     });
+
+    return this.handleResponse(response);
+  }
+
+  // Groups management
+  async getGroups(token: string, params?: Record<string, any>): Promise<ApiResponse<any>> {
+    let queryString = '';
+    if (params) {
+      const urlParams = new URLSearchParams();
+
+      // Handle standard parameters
+      if (params.page) urlParams.append('page', params.page.toString());
+      if (params.per_page) urlParams.append('per_page', params.per_page.toString());
+      if (params.sort) urlParams.append('sort', params.sort);
+      if (params.include) urlParams.append('include', params.include);
+
+      // Handle filter parameters with filter[field] format
+      if (params.filters) {
+        Object.keys(params.filters).forEach(key => {
+          const value = params.filters[key];
+          if (value && value.toString().trim() !== '') {
+            urlParams.append(`filter[${key}]`, value.toString().trim());
+          }
+        });
+      }
+
+      queryString = urlParams.toString() ? '?' + urlParams.toString() : '';
+    }
+
+    const response = await fetch(`${API_BASE_URL}/groups${queryString}`, {
+      method: 'GET',
+      headers: this.getHeaders(token),
+    });
+
+    return this.handleResponse(response);
+  }
+
+  async getGroupById(token: string, groupId: string): Promise<ApiResponse<any>> {
+    const response = await fetch(`${API_BASE_URL}/groups/${groupId}`, {
+      method: 'GET',
+      headers: this.getHeaders(token),
+    });
+
+    return this.handleResponse(response);
+  }
+
+  async createGroup(token: string, data: { name: string }): Promise<ApiResponse<any>> {
+    const response = await fetch(`${API_BASE_URL}/groups`, {
+      method: 'POST',
+      headers: this.getHeaders(token),
+      body: JSON.stringify(data),
+    });
+
+    return this.handleResponse(response);
+  }
+
+  async updateGroup(token: string, groupId: string, data: { name: string }): Promise<ApiResponse<any>> {
+    const response = await fetch(`${API_BASE_URL}/groups/${groupId}`, {
+      method: 'PUT',
+      headers: this.getHeaders(token),
+      body: JSON.stringify(data),
+    });
+
+    return this.handleResponse(response);
+  }
+
+  async deleteGroup(token: string, groupId: string): Promise<ApiResponse<any>> {
+    const response = await fetch(`${API_BASE_URL}/groups/${groupId}`, {
+      method: 'DELETE',
+      headers: this.getHeaders(token),
+    });
+
+    // Handle 204 No Content response
+    if (response.status === 204) {
+      return {
+        success: true,
+        message: 'Group deleted successfully',
+        code: 204,
+      };
+    }
+
+    return this.handleResponse(response);
+  }
+
+  // Achievements management
+  async getAchievements(token: string, params?: Record<string, any>): Promise<ApiResponse<any>> {
+    let queryString = '';
+    if (params) {
+      const urlParams = new URLSearchParams();
+
+      // Handle standard parameters
+      if (params.page) urlParams.append('page', params.page.toString());
+      if (params.per_page) urlParams.append('per_page', params.per_page.toString());
+      if (params.sort) urlParams.append('sort', params.sort);
+      if (params.include) urlParams.append('include', params.include);
+
+      // Handle filter parameters with filter[field] format
+      if (params.filters) {
+        Object.keys(params.filters).forEach(key => {
+          const value = params.filters[key];
+          if (value && value.toString().trim() !== '') {
+            urlParams.append(`filter[${key}]`, value.toString().trim());
+          }
+        });
+      }
+
+      queryString = urlParams.toString() ? '?' + urlParams.toString() : '';
+    }
+
+    const response = await fetch(`${API_BASE_URL}/achievements${queryString}`, {
+      method: 'GET',
+      headers: this.getHeaders(token),
+    });
+
+    return this.handleResponse(response);
+  }
+
+  async getAchievementById(token: string, achievementId: string): Promise<ApiResponse<any>> {
+    const response = await fetch(`${API_BASE_URL}/achievements/${achievementId}`, {
+      method: 'GET',
+      headers: this.getHeaders(token),
+    });
+
+    return this.handleResponse(response);
+  }
+
+  async createAchievement(token: string, data: {
+    name: string;
+    font_family: string;
+    font_size: string;
+    color: string;
+    weight: string;
+    font_style: string;
+    text_shadow: string;
+    required_points: number;
+  }): Promise<ApiResponse<any>> {
+    const response = await fetch(`${API_BASE_URL}/achievements`, {
+      method: 'POST',
+      headers: this.getHeaders(token),
+      body: JSON.stringify(data),
+    });
+
+    return this.handleResponse(response);
+  }
+
+  async updateAchievement(token: string, achievementId: string, data: {
+    name: string;
+    font_family: string;
+    font_size: string;
+    color: string;
+    weight: string;
+    font_style: string;
+    text_shadow: string;
+    required_points: number;
+  }): Promise<ApiResponse<any>> {
+    const response = await fetch(`${API_BASE_URL}/achievements/${achievementId}`, {
+      method: 'PUT',
+      headers: this.getHeaders(token),
+      body: JSON.stringify(data),
+    });
+
+    return this.handleResponse(response);
+  }
+
+  async deleteAchievement(token: string, achievementId: string): Promise<ApiResponse<any>> {
+    const response = await fetch(`${API_BASE_URL}/achievements/${achievementId}`, {
+      method: 'DELETE',
+      headers: this.getHeaders(token),
+    });
+
+    // Handle 204 No Content response
+    if (response.status === 204) {
+      return {
+        success: true,
+        message: 'Achievement deleted successfully',
+        code: 204,
+      };
+    }
 
     return this.handleResponse(response);
   }

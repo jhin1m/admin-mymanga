@@ -70,12 +70,12 @@ const navItems: NavItem[] = [
   {
     icon: <GroupIcon />,
     name: "Nhóm dịch",
-    path: "/admin/translation-groups",
+    path: "/admin/groups",
   },
   {
     icon: <ShootingStarIcon />,
     name: "Danh hiệu",
-    path: "/admin/titles",
+    path: "/admin/achievements",
   },
   {
     icon: <GroupIcon />,

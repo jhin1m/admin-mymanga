@@ -2,7 +2,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import Button from "@/components/ui/button/Button";
 import Badge from "@/components/ui/badge/Badge";
 import Pagination from "@/components/ui/pagination/Pagination";
 import Alert from "@/components/ui/alert/Alert";
