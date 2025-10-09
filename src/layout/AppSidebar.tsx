@@ -5,22 +5,14 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useSidebar } from "../context/SidebarContext";
 import {
-  BoxCubeIcon,
-  CalenderIcon,
   ChevronDownIcon,
   GridIcon,
   HorizontaLDots,
   ListIcon,
-  PageIcon,
-  PieChartIcon,
-  PlugInIcon,
-  TableIcon,
-  UserCircleIcon,
   TimeIcon,
   UserIcon,
   FolderIcon,
   GroupIcon,
-  BellIcon,
   ChatIcon,
   ShootingStarIcon,
 } from "../icons/index";
@@ -88,9 +80,9 @@ const navItems: NavItem[] = [
     path: "/admin/comments",
   },
   {
-    icon: <BellIcon />,
+    icon: <GridIcon />,
     name: "Thông báo",
-    path: "/admin/notifications",
+    path: "/admin/announcements",
   },
 ];
 

@@ -1153,6 +1153,26 @@ class ApiService {
 
     return this.handleResponse(response);
   }
+
+  // Announcement management
+  async getAnnouncement(token: string): Promise<ApiResponse<{ html: string }>> {
+    const response = await fetch(`${API_BASE_URL}/statics/announcement`, {
+      method: 'GET',
+      headers: this.getHeaders(token),
+    });
+
+    return this.handleResponse<{ html: string }>(response);
+  }
+
+  async saveAnnouncement(token: string, html: string): Promise<ApiResponse<any>> {
+    const response = await fetch(`${API_BASE_URL}/statics/announcement`, {
+      method: 'POST',
+      headers: this.getHeaders(token),
+      body: JSON.stringify({ html }),
+    });
+
+    return this.handleResponse(response);
+  }
 }
 
 export const apiService = new ApiService();

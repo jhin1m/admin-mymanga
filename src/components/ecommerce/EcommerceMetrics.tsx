@@ -1,7 +1,6 @@
 "use client";
-import React, { useState, useEffect } from "react";
-import { useAuth } from "@/context/AuthContext";
-import { apiService, type BasicStats } from "@/services/api";
+import React, { useEffect } from "react";
+import { useDashboard } from "@/context/DashboardContext";
 import { GroupIcon, DocsIcon, PageIcon, BoxCubeIcon } from "@/icons";
 
 interface MetricCardProps {
@@ -35,43 +34,17 @@ const MetricCard: React.FC<MetricCardProps> = ({ title, value, icon, isLoading }
 );
 
 export const EcommerceMetrics = () => {
-  const { token } = useAuth();
-  const [stats, setStats] = useState<BasicStats | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { basicStats, isLoadingStats, statsError, fetchBasicStats } = useDashboard();
 
   useEffect(() => {
-    const fetchStats = async () => {
-      if (!token) {
-        setIsLoading(false);
-        return;
-      }
+    fetchBasicStats();
+  }, [fetchBasicStats]);
 
-      try {
-        setError(null);
-        const response = await apiService.getBasicStats(token);
-
-        if (response.success && response.data) {
-          setStats(response.data);
-        } else {
-          setError(response.message || "Failed to fetch statistics");
-        }
-      } catch (err: any) {
-        setError(err.message || "An error occurred while fetching statistics");
-        console.error("Error fetching stats:", err);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchStats();
-  }, [token]);
-
-  if (error) {
+  if (statsError) {
     return (
       <div className="rounded-2xl border border-red-200 bg-red-50 p-5 dark:border-red-800 dark:bg-red-900/20 md:p-6">
         <p className="text-red-600 dark:text-red-400">
-          Error loading statistics: {error}
+          Error loading statistics: {statsError}
         </p>
       </div>
     );
@@ -81,30 +54,30 @@ export const EcommerceMetrics = () => {
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 md:gap-6">
       <MetricCard
         title="Users"
-        value={stats?.user_count || 0}
+        value={basicStats?.user_count || 0}
         icon={<GroupIcon className="text-gray-800 size-6 dark:text-white/90" />}
-        isLoading={isLoading}
+        isLoading={isLoadingStats}
       />
 
       <MetricCard
         title="Mangas"
-        value={stats?.manga_count || 0}
+        value={basicStats?.manga_count || 0}
         icon={<DocsIcon className="text-gray-800 size-6 dark:text-white/90" />}
-        isLoading={isLoading}
+        isLoading={isLoadingStats}
       />
 
       <MetricCard
         title="Chapters"
-        value={stats?.chapter_count || 0}
+        value={basicStats?.chapter_count || 0}
         icon={<PageIcon className="text-gray-800 size-6 dark:text-white/90" />}
-        isLoading={isLoading}
+        isLoading={isLoadingStats}
       />
 
       <MetricCard
         title="Pets"
-        value={stats?.pet_count || 0}
+        value={basicStats?.pet_count || 0}
         icon={<BoxCubeIcon className="text-gray-800 size-6 dark:text-white/90" />}
-        isLoading={isLoading}
+        isLoading={isLoadingStats}
       />
     </div>
   );
