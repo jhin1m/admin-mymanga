@@ -52,12 +52,12 @@ export default function AnnouncementPage() {
           // Handle null or empty HTML gracefully
           setHtml(response.data.html || "");
         }
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error("Error fetching announcement:", error);
         showAlert(
           "error",
           "Lỗi tải dữ liệu",
-          error.message || "Có lỗi xảy ra khi tải thông báo"
+          (error as Error).message || "Có lỗi xảy ra khi tải thông báo"
         );
       } finally {
         setLoading(false);
@@ -76,12 +76,12 @@ export default function AnnouncementPage() {
       if (response.success || response.code === 204) {
         showAlert("success", "Thành công", "Đã lưu thông báo thành công!");
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error saving announcement:", error);
       showAlert(
         "error",
         "Lỗi khi lưu",
-        error.message || "Lỗi khi lưu, vui lòng thử lại."
+        (error as Error).message || "Lỗi khi lưu, vui lòng thử lại."
       );
     } finally {
       setSaving(false);
