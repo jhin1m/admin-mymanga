@@ -1064,6 +1064,95 @@ class ApiService {
 
     return this.handleResponse(response);
   }
+
+  // Comments management
+  async getComments(token: string, params?: Record<string, any>): Promise<ApiResponse<any>> {
+    let queryString = '';
+    if (params) {
+      const urlParams = new URLSearchParams();
+
+      // Handle standard parameters
+      if (params.page) urlParams.append('page', params.page.toString());
+      if (params.per_page) urlParams.append('per_page', params.per_page.toString());
+      if (params.sort) urlParams.append('sort', params.sort);
+      if (params.include) urlParams.append('include', params.include);
+
+      // Handle filter parameters with filter[field] format
+      if (params.filters) {
+        Object.keys(params.filters).forEach(key => {
+          const value = params.filters[key];
+          if (value && value.toString().trim() !== '') {
+            urlParams.append(`filter[${key}]`, value.toString().trim());
+          }
+        });
+      }
+
+      queryString = urlParams.toString() ? '?' + urlParams.toString() : '';
+    }
+
+    const response = await fetch(`${API_BASE_URL}/comments${queryString}`, {
+      method: 'GET',
+      headers: this.getHeaders(token),
+    });
+
+    return this.handleResponse(response);
+  }
+
+  async deleteComment(token: string, commentId: string): Promise<ApiResponse<any>> {
+    const response = await fetch(`${API_BASE_URL}/comments/${commentId}`, {
+      method: 'DELETE',
+      headers: this.getHeaders(token),
+    });
+
+    // Handle 204 No Content response
+    if (response.status === 204) {
+      return {
+        success: true,
+        message: 'Comment deleted successfully',
+        code: 204,
+      };
+    }
+
+    return this.handleResponse(response);
+  }
+
+  async updateComment(token: string, commentId: string, data: Record<string, any>): Promise<ApiResponse<any>> {
+    const response = await fetch(`${API_BASE_URL}/comments/${commentId}`, {
+      method: 'PUT',
+      headers: this.getHeaders(token),
+      body: JSON.stringify(data),
+    });
+
+    return this.handleResponse(response);
+  }
+
+  async getCommentThread(token: string, commentId: string): Promise<ApiResponse<any>> {
+    const response = await fetch(
+      `${API_BASE_URL}/comments/${commentId}?include=user,commentable,childes`,
+      {
+        method: 'GET',
+        headers: this.getHeaders(token),
+      }
+    );
+
+    return this.handleResponse(response);
+  }
+
+  async createCommentReply(token: string, data: {
+    content: string;
+    parent_id: string;
+    commentable_id: string;
+    commentable_type: string;
+    user_id?: string;
+  }): Promise<ApiResponse<any>> {
+    const response = await fetch(`${API_BASE_URL}/comments`, {
+      method: 'POST',
+      headers: this.getHeaders(token),
+      body: JSON.stringify(data),
+    });
+
+    return this.handleResponse(response);
+  }
 }
 
 export const apiService = new ApiService();

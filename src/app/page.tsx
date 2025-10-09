@@ -75,26 +75,7 @@ export default function HomePage() {
                 Sign In to Admin Panel
               </Link>
 
-              <div className="text-center">
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Need an account?{" "}
-                  <Link
-                    href="/signup"
-                    className="font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300"
-                  >
-                    Sign up here
-                  </Link>
-                </p>
-              </div>
             </div>
-          </div>
-
-          <div className="mt-8 text-center text-sm text-gray-500 dark:text-gray-400">
-            <p>
-              This is the administrative interface for MyManga VN.
-              <br />
-              Only authorized administrators can access this system.
-            </p>
           </div>
         </div>
       </div>
