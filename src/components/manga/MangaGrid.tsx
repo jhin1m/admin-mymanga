@@ -34,7 +34,7 @@ interface Manga {
   created_at: string;
   updated_at: string;
   cover_full_url: string;
-  group: any;
+  group: Group | null;
   user: {
     id: string;
     name: string;
@@ -46,8 +46,8 @@ interface Manga {
     name: string;
     slug: string;
   }>;
-  artist: any;
-  doujinshi: any;
+  artist: Artist | null;
+  doujinshi: Doujinshi | null;
 }
 
 interface PaginationData {
@@ -68,6 +68,38 @@ interface MangaSearchFilters {
   artist_id: string;
   doujinshi_id: string;
   is_reviewed: string;
+}
+
+interface Group {
+  id: string;
+  name: string;
+  slug: string;
+}
+
+interface Artist {
+  id: string;
+  name: string;
+  slug: string;
+}
+
+interface Doujinshi {
+  id: string;
+  name: string;
+  slug: string;
+}
+
+interface MangaApiResponse {
+  success: boolean;
+  data: Manga[];
+  pagination?: {
+    count: number;
+    total: number;
+    perPage: number;
+    currentPage: number;
+    totalPages: number;
+  };
+  message?: string;
+  code: number;
 }
 
 interface MangaGridProps {
@@ -113,7 +145,7 @@ const MangaGrid: React.FC<MangaGridProps> = ({ searchFilters }) => {
 
     setLoading(true);
     try {
-      const params: Record<string, any> = {
+      const params: Record<string, unknown> = {
         page: page,
         per_page: pagination.perPage,
         sort: '-updated_at',
@@ -148,7 +180,7 @@ const MangaGrid: React.FC<MangaGridProps> = ({ searchFilters }) => {
         }
       }
 
-      const response = await apiService.getMangas(token, params);
+      const response = await apiService.getMangas(token, params) as MangaApiResponse;
 
       if (response.success && response.data) {
         setMangas(response.data);
@@ -171,7 +203,7 @@ const MangaGrid: React.FC<MangaGridProps> = ({ searchFilters }) => {
 
   useEffect(() => {
     fetchMangas(1, searchFilters);
-  }, [searchFilters]);
+  }, [searchFilters, fetchMangas]);
 
   const handlePageChange = (page: number) => {
     fetchMangas(page, searchFilters);
