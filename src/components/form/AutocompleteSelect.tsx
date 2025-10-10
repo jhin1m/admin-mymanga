@@ -33,14 +33,11 @@ const AutocompleteSelect: React.FC<AutocompleteSelectProps> = ({
   const [options, setOptions] = useState<Option[]>([]);
   const [loading, setLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
-  const [selectedOption, setSelectedOption] = useState<Option | null>(
-    initialLabel && value ? { value, label: initialLabel } : null
-  );
   const [focusedIndex, setFocusedIndex] = useState(-1);
 
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const debounceRef = useRef<NodeJS.Timeout>();
+  const debounceRef = useRef<NodeJS.Timeout | undefined>(undefined);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -105,14 +102,12 @@ const AutocompleteSelect: React.FC<AutocompleteSelectProps> = ({
 
     // If input is cleared, clear selection
     if (!newQuery) {
-      setSelectedOption(null);
       onChange("", undefined);
     }
   };
 
   // Handle option selection
   const handleOptionSelect = (option: Option) => {
-    setSelectedOption(option);
     setQuery(option.label);
     setIsOpen(false);
     setFocusedIndex(-1);
@@ -146,16 +141,12 @@ const AutocompleteSelect: React.FC<AutocompleteSelectProps> = ({
     }
   };
 
-  // Update query when initialLabel changes
+  // Update query when initialLabel or value changes
   useEffect(() => {
     if (initialLabel) {
       setQuery(initialLabel);
-      if (value) {
-        setSelectedOption({ value, label: initialLabel });
-      }
-    } else if (!value && query) {
+    } else if (!value) {
       setQuery("");
-      setSelectedOption(null);
     }
   }, [initialLabel, value]);
 
