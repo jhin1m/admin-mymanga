@@ -310,7 +310,7 @@ export const AchievementFormModal: React.FC<AchievementFormModalProps> = ({
               disabled={isLoading}
             />
             <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-              Để "unset" nếu không muốn có đổ bóng
+              Để &quot;unset&quot; nếu không muốn có đổ bóng
             </p>
           </div>
 
@@ -341,7 +341,6 @@ export const AchievementFormModal: React.FC<AchievementFormModalProps> = ({
 
         <div className="flex items-center justify-end gap-3 mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
           <Button
-            type="button"
             size="sm"
             variant="outline"
             onClick={onClose}
@@ -349,10 +348,9 @@ export const AchievementFormModal: React.FC<AchievementFormModalProps> = ({
           >
             Hủy
           </Button>
-          <Button
+          <button
             type="submit"
-            size="sm"
-            variant="primary"
+            className="inline-flex items-center justify-center font-medium gap-2 rounded-lg transition px-4 py-3 text-sm bg-brand-500 text-white shadow-theme-xs hover:bg-brand-600 disabled:bg-brand-300 disabled:cursor-not-allowed disabled:opacity-50"
             disabled={isLoading}
           >
             {isLoading ? (
@@ -363,7 +361,7 @@ export const AchievementFormModal: React.FC<AchievementFormModalProps> = ({
             ) : (
               submitText
             )}
-          </Button>
+          </button>
         </div>
       </form>
     </Modal>

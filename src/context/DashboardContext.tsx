@@ -17,13 +17,6 @@ interface CacheEntry<T> {
   timestamp: number;
 }
 
-interface DashboardData {
-  basicStats: BasicStats | null;
-  mangasTotal: Manga[];
-  mangasDay: Manga[];
-  mangasWeek: Manga[];
-}
-
 interface DashboardContextType {
   // Data
   basicStats: BasicStats | null;
@@ -102,8 +95,8 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       } else {
         setStatsError(response.message || "Failed to fetch statistics");
       }
-    } catch (err: any) {
-      setStatsError(err.message || "An error occurred while fetching statistics");
+    } catch (err: unknown) {
+      setStatsError(err instanceof Error ? err.message : "An error occurred while fetching statistics");
       console.error("Error fetching basic stats:", err);
     } finally {
       setIsLoadingStats(false);
@@ -166,8 +159,8 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         },
         timestamp: Date.now(),
       });
-    } catch (err: any) {
-      setMangasError(err.message || "An error occurred while fetching manga statistics");
+    } catch (err: unknown) {
+      setMangasError(err instanceof Error ? err.message : "An error occurred while fetching manga statistics");
       console.error("Error fetching manga stats:", err);
     } finally {
       setIsLoadingMangas(false);

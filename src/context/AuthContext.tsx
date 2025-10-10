@@ -2,7 +2,7 @@
 
 import React, { createContext, useState, useContext, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { apiService, type AdminUser, type LoginRequest, type ApiResponse } from "@/services/api";
+import { apiService, type AdminUser, type LoginRequest } from "@/services/api";
 
 interface AuthContextType {
   user: AdminUser | null;
@@ -49,7 +49,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setToken(null);
         setUser(null);
       }
-    } catch (error) {
+    } catch {
       // Token is invalid or expired
       localStorage.removeItem("admin_token");
       setToken(null);
@@ -91,12 +91,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           message: response.message || "Login failed"
         };
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Login error:", error);
       return {
         success: false,
-        message: error.message || "Login failed",
-        errors: error.errors
+        message: error instanceof Error ? error.message : "Login failed",
+        errors: (error as { errors?: Record<string, string[]> }).errors
       };
     } finally {
       setIsLoading(false);

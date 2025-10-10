@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Modal } from "./index";
 import Button from "../button/Button";
 import Badge from "../badge/Badge";
@@ -64,13 +64,7 @@ export const CommentThreadModal: React.FC<CommentThreadModalProps> = ({
   const [replyContent, setReplyContent] = useState("");
   const [replyLoading, setReplyLoading] = useState(false);
 
-  useEffect(() => {
-    if (isOpen && commentId && token) {
-      fetchThread();
-    }
-  }, [isOpen, commentId, token]);
-
-  const fetchThread = async () => {
+  const fetchThread = useCallback(async () => {
     if (!token) return;
 
     setLoading(true);
@@ -78,17 +72,23 @@ export const CommentThreadModal: React.FC<CommentThreadModalProps> = ({
     try {
       const response = await apiService.getCommentThread(token, commentId);
       if (response.success && response.data) {
-        setThread(response.data);
+        setThread(response.data as CommentThread);
       } else {
         setError("Không thể tải bình luận");
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Error fetching comment thread:", err);
-      setError(err?.message || "Có lỗi xảy ra khi tải bình luận");
+      setError(err instanceof Error ? err.message : "Có lỗi xảy ra khi tải bình luận");
     } finally {
       setLoading(false);
     }
-  };
+  }, [token, commentId]);
+
+  useEffect(() => {
+    if (isOpen && commentId && token) {
+      fetchThread();
+    }
+  }, [isOpen, commentId, token, fetchThread]);
 
   const stripHtml = (html: string) => {
     const tmp = document.createElement("DIV");
@@ -146,9 +146,9 @@ export const CommentThreadModal: React.FC<CommentThreadModalProps> = ({
 
       // Notify parent component
       onThreadUpdate?.();
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Error creating reply:", err);
-      alert(err?.message || "Có lỗi xảy ra khi gửi trả lời");
+      alert(err instanceof Error ? err.message : "Có lỗi xảy ra khi gửi trả lời");
     } finally {
       setReplyLoading(false);
     }
@@ -173,9 +173,9 @@ export const CommentThreadModal: React.FC<CommentThreadModalProps> = ({
         await fetchThread();
         onThreadUpdate?.();
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Error deleting comment:", err);
-      alert(err?.message || "Có lỗi xảy ra khi xóa comment");
+      alert(err instanceof Error ? err.message : "Có lỗi xảy ra khi xóa comment");
     }
   };
 
