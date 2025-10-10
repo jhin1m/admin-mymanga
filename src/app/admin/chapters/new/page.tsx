@@ -10,6 +10,27 @@ import { ConfirmModal } from "@/components/ui/modal/ConfirmModal";
 import { useModal } from "@/hooks/useModal";
 import Alert from "@/components/ui/alert/Alert";
 
+interface Manga {
+  id: string;
+  name: string;
+}
+
+interface MangaApiResponse {
+  success: boolean;
+  data: Manga;
+  message?: string;
+  code: number;
+}
+
+interface CreateChapterApiResponse {
+  success: boolean;
+  data: {
+    id: string;
+  };
+  message?: string;
+  code: number;
+}
+
 const CreateNewChapterPage = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -60,7 +81,7 @@ const CreateNewChapterPage = () => {
 
       setLoading(true);
       try {
-        const response = await apiService.getMangaById(token, mangaIdParam);
+        const response = await apiService.getMangaById(token, mangaIdParam) as MangaApiResponse;
         if (response.success && response.data) {
           setMangaName(response.data.name);
         } else {
@@ -98,7 +119,7 @@ const CreateNewChapterPage = () => {
 
     try {
       // Step 1: Create the chapter
-      const response = await apiService.createChapter(token, mangaIdParam, chapterName);
+      const response = await apiService.createChapter(token, mangaIdParam, chapterName) as CreateChapterApiResponse;
 
       if (!response.success || !response.data) {
         showAlert("error", "Lỗi", response.message || "Có lỗi xảy ra khi tạo chương");
@@ -132,9 +153,9 @@ const CreateNewChapterPage = () => {
               return newMap;
             });
             successCount++;
-          } catch (error: any) {
+          } catch (error: unknown) {
             console.error(`Error uploading image ${i + 1}:`, error);
-            const errorMsg = error.message || "Lỗi tải lên";
+            const errorMsg = error instanceof Error ? error.message : "Lỗi tải lên";
             uploadErrors.push(`Ảnh ${i + 1}: ${errorMsg}`);
 
             // Update status to error
@@ -168,11 +189,17 @@ const CreateNewChapterPage = () => {
           router.push(`/admin/chapters/${newChapterId}/edit`);
         }, 1500);
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error creating chapter:", error);
-      const errorMessage = error.errors
-        ? Object.values(error.errors).flat().join(", ")
-        : error.message || "Có lỗi xảy ra khi tạo chương";
+      let errorMessage = "Có lỗi xảy ra khi tạo chương";
+
+      if (error && typeof error === 'object' && 'errors' in error) {
+        const errorObj = error as { errors: Record<string, string[]> };
+        errorMessage = Object.values(errorObj.errors).flat().join(", ");
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+
       showAlert("error", "Lỗi", errorMessage);
     } finally {
       setCreating(false);

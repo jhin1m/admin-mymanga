@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import { useRouter, useParams } from "next/navigation";
+import { useParams } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { apiService } from "@/services/api";
 import PageBreadcrumb from "@/components/common/PageBreadCrumb";
@@ -38,8 +38,52 @@ interface Genre {
   slug: string;
 }
 
+interface MangaApiResponse {
+  success: boolean;
+  data: Manga;
+  message?: string;
+  code: number;
+}
+
+interface GenresApiResponse {
+  success: boolean;
+  data: Genre[];
+  message?: string;
+  code: number;
+}
+
+interface SearchApiResponse<T> {
+  success: boolean;
+  data: T[];
+  message?: string;
+  code: number;
+}
+
+interface Doujinshi {
+  id: string;
+  name: string;
+  slug: string;
+}
+
+interface Artist {
+  id: string;
+  name: string;
+  slug: string;
+}
+
+interface Group {
+  id: string;
+  name: string;
+  slug: string;
+}
+
+interface User {
+  id: string;
+  name: string;
+  email: string;
+}
+
 export default function MangaEditPage() {
-  const router = useRouter();
   const params = useParams();
   const { token } = useAuth();
   const mangaId = params.id as string;
@@ -100,7 +144,7 @@ export default function MangaEditPage() {
       setLoading(true);
       try {
         // Fetch manga
-        const mangaResponse = await apiService.getMangaById(token, mangaId);
+        const mangaResponse = await apiService.getMangaById(token, mangaId) as MangaApiResponse;
         if (mangaResponse.success && mangaResponse.data) {
           const manga: Manga = mangaResponse.data;
           setName(manga.name);
@@ -121,7 +165,7 @@ export default function MangaEditPage() {
         }
 
         // Fetch all genres
-        const genresResponse = await apiService.getGenresAll(token);
+        const genresResponse = await apiService.getGenresAll(token) as GenresApiResponse;
         if (genresResponse.success && genresResponse.data) {
           setAllGenres(genresResponse.data);
         }
@@ -187,7 +231,7 @@ export default function MangaEditPage() {
         }
       } else {
         // Use JSON payload when no cover image
-        const payload: Record<string, any> = {
+        const payload: Record<string, unknown> = {
           genres: selectedGenres,
           name: name.trim(),
           user_id: userId,
@@ -218,14 +262,15 @@ export default function MangaEditPage() {
           showAlert("error", "Lỗi", response.message || "Có lỗi xảy ra khi cập nhật truyện");
         }
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error updating manga:", error);
-      console.error("Error.errors:", error.errors);
+      const errorObj = error as { errors?: { fields?: Record<string, unknown> }; message?: string };
+      console.error("Error.errors:", errorObj.errors);
 
       // Display validation errors if available
-      if (error.errors?.fields) {
+      if (errorObj.errors?.fields) {
         // Handle Laravel validation error format with 'fields'
-        const errorMessages = Object.entries(error.errors.fields)
+        const errorMessages = Object.entries(errorObj.errors.fields)
           .map(([field, messages]) => {
             if (Array.isArray(messages)) {
               return `${field}: ${messages.join(', ')}`;
@@ -234,10 +279,10 @@ export default function MangaEditPage() {
           })
           .join(', ');
         showAlert("error", "Lỗi validation", errorMessages);
-      } else if (error.errors) {
+      } else if (errorObj.errors) {
         // Fallback for other error formats
-        if (typeof error.errors === 'object' && !Array.isArray(error.errors)) {
-          const errorMessages = Object.entries(error.errors)
+        if (typeof errorObj.errors === 'object' && !Array.isArray(errorObj.errors)) {
+          const errorMessages = Object.entries(errorObj.errors)
             .map(([field, messages]) => {
               if (Array.isArray(messages)) {
                 return `${field}: ${messages.join(', ')}`;
@@ -247,10 +292,10 @@ export default function MangaEditPage() {
             .join(', ');
           showAlert("error", "Lỗi validation", errorMessages);
         } else {
-          showAlert("error", "Lỗi", JSON.stringify(error.errors));
+          showAlert("error", "Lỗi", JSON.stringify(errorObj.errors));
         }
       } else {
-        showAlert("error", "Lỗi cập nhật", error.message || "Có lỗi xảy ra khi cập nhật truyện");
+        showAlert("error", "Lỗi cập nhật", errorObj.message || "Có lỗi xảy ra khi cập nhật truyện");
       }
     } finally {
       setSaving(false);
@@ -345,9 +390,9 @@ export default function MangaEditPage() {
                   onChange={(value) => setDoujinshiId(value)}
                   onSearch={async (query) => {
                     if (!token) return [];
-                    const response = await apiService.searchDoujinshis(token, query);
+                    const response = await apiService.searchDoujinshis(token, query) as SearchApiResponse<Doujinshi>;
                     if (response.success && response.data) {
-                      return response.data.map((d: any) => ({
+                      return response.data.map((d: Doujinshi) => ({
                         value: d.id,
                         label: d.name,
                       }));
@@ -440,9 +485,9 @@ export default function MangaEditPage() {
                   onChange={(value) => setArtistId(value)}
                   onSearch={async (query) => {
                     if (!token) return [];
-                    const response = await apiService.searchArtists(token, query);
+                    const response = await apiService.searchArtists(token, query) as SearchApiResponse<Artist>;
                     if (response.success && response.data) {
-                      return response.data.map((a: any) => ({
+                      return response.data.map((a: Artist) => ({
                         value: a.id,
                         label: a.name,
                       }));
@@ -464,9 +509,9 @@ export default function MangaEditPage() {
                   onChange={(value) => setGroupId(value)}
                   onSearch={async (query) => {
                     if (!token) return [];
-                    const response = await apiService.searchGroups(token, query);
+                    const response = await apiService.searchGroups(token, query) as SearchApiResponse<Group>;
                     if (response.success && response.data) {
-                      return response.data.map((g: any) => ({
+                      return response.data.map((g: Group) => ({
                         value: g.id,
                         label: g.name,
                       }));
@@ -488,9 +533,9 @@ export default function MangaEditPage() {
                   onChange={(value) => setUserId(value)}
                   onSearch={async (query) => {
                     if (!token) return [];
-                    const response = await apiService.searchUsers(token, query);
+                    const response = await apiService.searchUsers(token, query) as SearchApiResponse<User>;
                     if (response.success && response.data) {
-                      return response.data.map((u: any) => ({
+                      return response.data.map((u: User) => ({
                         value: u.id,
                         label: u.name,
                       }));

@@ -3,7 +3,7 @@ import ComponentCard from "@/components/common/ComponentCard";
 import PageBreadcrumb from "@/components/common/PageBreadCrumb";
 import MangaSearchForm from "@/components/form/MangaSearchForm";
 import MangaGrid from "@/components/manga/MangaGrid";
-import { useState, useRef } from "react";
+import { useState } from "react";
 
 interface MangaSearchFilters {
   search: string;
@@ -23,8 +23,6 @@ export default function MangasPage() {
     doujinshi_id: "",
     is_reviewed: "",
   });
-
-  const gridRef = useRef<{ getLoadingState: () => boolean }>(null);
 
   const handleSearch = (filters: MangaSearchFilters) => {
     setSearchFilters(filters);

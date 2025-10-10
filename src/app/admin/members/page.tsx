@@ -3,7 +3,7 @@ import ComponentCard from "@/components/common/ComponentCard";
 import PageBreadcrumb from "@/components/common/PageBreadCrumb";
 import MembersSearchForm from "@/components/form/MembersSearchForm";
 import MembersTable from "@/components/tables/MembersTable";
-import { useState, useRef } from "react";
+import { useState } from "react";
 
 interface SearchFilters {
   user_id: string;
@@ -19,8 +19,6 @@ export default function MembersPage() {
     email: "",
     role: "",
   });
-
-  const tableRef = useRef<{ getLoadingState: () => boolean }>(null);
 
   const handleSearch = (filters: SearchFilters) => {
     setSearchFilters(filters);

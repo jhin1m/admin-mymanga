@@ -18,6 +18,64 @@ interface Genre {
   slug: string;
 }
 
+interface GenresApiResponse {
+  success: boolean;
+  data: Genre[];
+  message?: string;
+  code: number;
+}
+
+interface ProfileApiResponse {
+  success: boolean;
+  data: {
+    id: string;
+    name: string;
+    email: string;
+  };
+  message?: string;
+  code: number;
+}
+
+interface CreateMangaApiResponse {
+  success: boolean;
+  data: {
+    id: string;
+  };
+  message?: string;
+  code: number;
+}
+
+interface SearchApiResponse<T> {
+  success: boolean;
+  data: T[];
+  message?: string;
+  code: number;
+}
+
+interface Doujinshi {
+  id: string;
+  name: string;
+  slug: string;
+}
+
+interface Artist {
+  id: string;
+  name: string;
+  slug: string;
+}
+
+interface Group {
+  id: string;
+  name: string;
+  slug: string;
+}
+
+interface User {
+  id: string;
+  name: string;
+  email: string;
+}
+
 export default function CreateNewMangaPage() {
   const router = useRouter();
   const { token } = useAuth();
@@ -73,13 +131,13 @@ export default function CreateNewMangaPage() {
       setLoading(true);
       try {
         // Fetch all genres
-        const genresResponse = await apiService.getGenresAll(token);
+        const genresResponse = await apiService.getGenresAll(token) as GenresApiResponse;
         if (genresResponse.success && genresResponse.data) {
           setAllGenres(genresResponse.data);
         }
 
         // Get current user profile to set as default user
-        const profileResponse = await apiService.getProfile(token);
+        const profileResponse = await apiService.getProfile(token) as ProfileApiResponse;
         if (profileResponse.success && profileResponse.data) {
           setUserId(profileResponse.data.id);
         }
@@ -140,7 +198,7 @@ export default function CreateNewMangaPage() {
 
         formData.append("cover", coverImage);
 
-        const response = await apiService.createManga(token, formData);
+        const response = await apiService.createManga(token, formData) as CreateMangaApiResponse;
 
         if (response.success) {
           showAlert("success", "Thành công", "Đã tạo truyện thành công");
@@ -156,7 +214,7 @@ export default function CreateNewMangaPage() {
         }
       } else {
         // Use JSON payload when no cover image
-        const payload: Record<string, any> = {
+        const payload: Record<string, unknown> = {
           genres: selectedGenres,
           name: name.trim(),
           user_id: userId,
@@ -179,7 +237,7 @@ export default function CreateNewMangaPage() {
         if (artistId) payload.artist_id = artistId;
         if (groupId) payload.group_id = groupId;
 
-        const response = await apiService.createManga(token, payload);
+        const response = await apiService.createManga(token, payload) as CreateMangaApiResponse;
 
         if (response.success) {
           showAlert("success", "Thành công", "Đã tạo truyện thành công");
@@ -194,39 +252,51 @@ export default function CreateNewMangaPage() {
           showAlert("error", "Lỗi", response.message || "Có lỗi xảy ra khi tạo truyện");
         }
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error creating manga:", error);
-      console.error("Error.errors:", error.errors);
 
-      // Display validation errors if available
-      if (error.errors?.fields) {
-        // Handle Laravel validation error format with 'fields'
-        const errorMessages = Object.entries(error.errors.fields)
-          .map(([field, messages]) => {
-            if (Array.isArray(messages)) {
-              return `${field}: ${messages.join(', ')}`;
-            }
-            return `${field}: ${messages}`;
-          })
-          .join(', ');
-        showAlert("error", "Lỗi validation", errorMessages);
-      } else if (error.errors) {
-        // Fallback for other error formats
-        if (typeof error.errors === 'object' && !Array.isArray(error.errors)) {
-          const errorMessages = Object.entries(error.errors)
-            .map(([field, messages]) => {
-              if (Array.isArray(messages)) {
-                return `${field}: ${messages.join(', ')}`;
-              }
-              return `${field}: ${messages}`;
-            })
-            .join(', ');
-          showAlert("error", "Lỗi validation", errorMessages);
+      // Type guard for error object
+      const isErrorWithDetails = (err: unknown): err is { errors?: unknown; message?: string } => {
+        return typeof err === 'object' && err !== null;
+      };
+
+      if (isErrorWithDetails(error)) {
+        console.error("Error.errors:", error.errors);
+
+        // Display validation errors if available
+        if (error.errors && typeof error.errors === 'object' && error.errors !== null) {
+          const errorObj = error.errors as Record<string, unknown>;
+
+          if ('fields' in errorObj && typeof errorObj.fields === 'object' && errorObj.fields !== null) {
+            // Handle Laravel validation error format with 'fields'
+            const errorMessages = Object.entries(errorObj.fields as Record<string, unknown>)
+              .map(([field, messages]) => {
+                if (Array.isArray(messages)) {
+                  return `${field}: ${messages.join(', ')}`;
+                }
+                return `${field}: ${messages}`;
+              })
+              .join(', ');
+            showAlert("error", "Lỗi validation", errorMessages);
+          } else if (!Array.isArray(errorObj)) {
+            // Fallback for other error formats
+            const errorMessages = Object.entries(errorObj)
+              .map(([field, messages]) => {
+                if (Array.isArray(messages)) {
+                  return `${field}: ${messages.join(', ')}`;
+                }
+                return `${field}: ${messages}`;
+              })
+              .join(', ');
+            showAlert("error", "Lỗi validation", errorMessages);
+          } else {
+            showAlert("error", "Lỗi", JSON.stringify(error.errors));
+          }
         } else {
-          showAlert("error", "Lỗi", JSON.stringify(error.errors));
+          showAlert("error", "Lỗi tạo truyện", error.message || "Có lỗi xảy ra khi tạo truyện");
         }
       } else {
-        showAlert("error", "Lỗi tạo truyện", error.message || "Có lỗi xảy ra khi tạo truyện");
+        showAlert("error", "Lỗi tạo truyện", "Có lỗi xảy ra khi tạo truyện");
       }
     } finally {
       setSaving(false);
@@ -333,9 +403,9 @@ export default function CreateNewMangaPage() {
                   onChange={(value) => setDoujinshiId(value)}
                   onSearch={async (query) => {
                     if (!token) return [];
-                    const response = await apiService.searchDoujinshis(token, query);
+                    const response = await apiService.searchDoujinshis(token, query) as SearchApiResponse<Doujinshi>;
                     if (response.success && response.data) {
-                      return response.data.map((d: any) => ({
+                      return response.data.map((d: Doujinshi) => ({
                         value: d.id,
                         label: d.name,
                       }));
@@ -423,9 +493,9 @@ export default function CreateNewMangaPage() {
                   onChange={(value) => setArtistId(value)}
                   onSearch={async (query) => {
                     if (!token) return [];
-                    const response = await apiService.searchArtists(token, query);
+                    const response = await apiService.searchArtists(token, query) as SearchApiResponse<Artist>;
                     if (response.success && response.data) {
-                      return response.data.map((a: any) => ({
+                      return response.data.map((a: Artist) => ({
                         value: a.id,
                         label: a.name,
                       }));
@@ -447,9 +517,9 @@ export default function CreateNewMangaPage() {
                   onChange={(value) => setGroupId(value)}
                   onSearch={async (query) => {
                     if (!token) return [];
-                    const response = await apiService.searchGroups(token, query);
+                    const response = await apiService.searchGroups(token, query) as SearchApiResponse<Group>;
                     if (response.success && response.data) {
-                      return response.data.map((g: any) => ({
+                      return response.data.map((g: Group) => ({
                         value: g.id,
                         label: g.name,
                       }));
@@ -471,9 +541,9 @@ export default function CreateNewMangaPage() {
                   onChange={(value) => setUserId(value)}
                   onSearch={async (query) => {
                     if (!token) return [];
-                    const response = await apiService.searchUsers(token, query);
+                    const response = await apiService.searchUsers(token, query) as SearchApiResponse<User>;
                     if (response.success && response.data) {
-                      return response.data.map((u: any) => ({
+                      return response.data.map((u: User) => ({
                         value: u.id,
                         label: u.name,
                       }));
