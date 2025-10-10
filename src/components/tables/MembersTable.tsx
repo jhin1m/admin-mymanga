@@ -40,16 +40,28 @@ interface SearchFilters {
   role: string;
 }
 
+interface UsersApiResponse {
+  success: boolean;
+  data: User[];
+  pagination?: {
+    count: number;
+    total: number;
+    perPage: number;
+    currentPage: number;
+    totalPages: number;
+  };
+  message?: string;
+  code: number;
+}
+
 interface MembersTableProps {
   searchFilters?: SearchFilters;
-  onFiltersChange?: (filters: SearchFilters) => void;
 }
 
 const MembersTable: React.FC<MembersTableProps> = ({
   searchFilters,
-  onFiltersChange,
 }) => {
-  const { user, token } = useAuth();
+  const { token } = useAuth();
   const [users, setUsers] = useState<User[]>([]);
   const [pagination, setPagination] = useState<PaginationData>({
     count: 0,
@@ -83,7 +95,7 @@ const MembersTable: React.FC<MembersTableProps> = ({
 
     setLoading(true);
     try {
-      const params: Record<string, any> = {
+      const params: Record<string, unknown> = {
         page: page,
         per_page: pagination.perPage,
         sort: '-created_at',
@@ -111,7 +123,7 @@ const MembersTable: React.FC<MembersTableProps> = ({
         }
       }
 
-      const response = await apiService.getUsers(token, params);
+      const response = await apiService.getUsers(token, params) as UsersApiResponse;
 
       if (response.success && response.data) {
         setUsers(response.data);
@@ -134,7 +146,7 @@ const MembersTable: React.FC<MembersTableProps> = ({
 
   useEffect(() => {
     fetchUsers(1, searchFilters);
-  }, [searchFilters]);
+  }, [searchFilters, fetchUsers]);
 
   const handlePageChange = (page: number) => {
     fetchUsers(page, searchFilters);
