@@ -31,8 +31,8 @@ Modern admin dashboard for **MyManga VN**, built with **Next.js 15**, **React 19
 Node.js 18+, pnpm, Laravel API (localhost:8000)
 
 # 1. Clone & install
-git clone <repo>
-cd free-nextjs-admin-dashboard-main
+git clone https://github.com/jhin1m/admin-mymanga
+cd admin-mymanga
 pnpm install
 
 # 2. Config .env
@@ -92,6 +92,14 @@ pnpm build    # Build
 pnpm start    # Production
 pnpm lint     # Lint check
 ```
+---
+
+## 📝 To Do
+- [ ] Error report page
+- [ ] Edit chapter by URL list
+- [ ] View field edit in Manga table
+- [ ] Rating field in Manga table
+- [ ] Better users management (banned users, delete comments, permissions etc.)
 
 ---
 
