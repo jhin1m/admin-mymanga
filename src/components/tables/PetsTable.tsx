@@ -41,6 +41,20 @@ interface SearchFilters {
   name: string;
 }
 
+interface PetsApiResponse {
+  success: boolean;
+  data: Pet[];
+  pagination?: {
+    count: number;
+    total: number;
+    perPage: number;
+    currentPage: number;
+    totalPages: number;
+  };
+  message?: string;
+  code: number;
+}
+
 interface PetsTableProps {
   searchFilters?: SearchFilters;
 }
@@ -88,7 +102,7 @@ const PetsTable: React.FC<PetsTableProps> = ({ searchFilters }) => {
 
       setLoading(true);
       try {
-        const params: Record<string, any> = {
+        const params: Record<string, unknown> = {
           page: page,
           per_page: pagination.perPage,
           sort: "-created_at",
@@ -108,7 +122,7 @@ const PetsTable: React.FC<PetsTableProps> = ({ searchFilters }) => {
           }
         }
 
-        const response = await apiService.getPets(token, params);
+        const response = await apiService.getPets(token, params) as PetsApiResponse;
 
         if (response.success && response.data) {
           setPets(response.data);
@@ -133,7 +147,7 @@ const PetsTable: React.FC<PetsTableProps> = ({ searchFilters }) => {
 
   useEffect(() => {
     fetchPets(1, searchFilters);
-  }, [searchFilters]);
+  }, [searchFilters, fetchPets]);
 
   const handlePageChange = (page: number) => {
     fetchPets(page, searchFilters);
@@ -200,10 +214,10 @@ const PetsTable: React.FC<PetsTableProps> = ({ searchFilters }) => {
       setPetToEdit(null);
       // Refresh the list after create/update
       await fetchPets(pagination.currentPage, searchFilters);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error submitting form:", error);
       const errorMessage =
-        error?.message || "Có lỗi xảy ra khi thực hiện hành động này";
+        error instanceof Error ? error.message : "Có lỗi xảy ra khi thực hiện hành động này";
       alert(errorMessage);
     } finally {
       setFormLoading(false);
