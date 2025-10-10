@@ -2,7 +2,7 @@
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 const API_BASE_URL = `${BASE_URL}/api/admin`;
 
-export interface ApiResponse<T = any> {
+export interface ApiResponse<T = unknown> {
   success: boolean;
   data?: T;
   message?: string;
@@ -13,6 +13,14 @@ export interface ApiResponse<T = any> {
 export interface LoginRequest {
   email: string;
   password: string;
+}
+
+export interface QueryParams {
+  page?: number;
+  per_page?: number;
+  sort?: string;
+  include?: string;
+  filters?: Record<string, string>;
 }
 
 export interface LoginResponse {
@@ -53,7 +61,7 @@ class ApiService {
     if (response.status === 204) {
       return {
         success: true,
-        data: null as any,
+        data: undefined,
         code: 204
       };
     }
@@ -62,7 +70,7 @@ class ApiService {
     const contentType = response.headers.get('content-type');
     const hasJsonContent = contentType && contentType.includes('application/json');
 
-    let data: any;
+    let data: unknown;
     if (hasJsonContent) {
       try {
         data = await response.json();
@@ -71,7 +79,7 @@ class ApiService {
         if (response.ok) {
           return {
             success: true,
-            data: null as any,
+            data: undefined,
             code: response.status
           };
         }
@@ -82,7 +90,7 @@ class ApiService {
       if (response.ok) {
         return {
           success: true,
-          data: null as any,
+          data: undefined,
           code: response.status
         };
       }
@@ -90,16 +98,21 @@ class ApiService {
     }
 
     if (!response.ok) {
-      console.error('API Error Response:', data);
+      console.error('API Error Response:', {
+        status: response.status,
+        statusText: response.statusText,
+        url: response.url,
+        data: data
+      });
       throw {
         success: false,
-        message: data.message || 'An error occurred',
+        message: (data as { message?: string }).message || `HTTP ${response.status}: ${response.statusText}`,
         code: response.status,
-        errors: data.errors || data.error // Handle both 'errors' and 'error'
+        errors: (data as { errors?: unknown, error?: unknown }).errors || (data as { errors?: unknown, error?: unknown }).error
       };
     }
 
-    return data;
+    return data as ApiResponse<T>;
   }
 
   // Authentication endpoints
@@ -144,7 +157,7 @@ class ApiService {
   }
 
   // Users management
-  async getUsers(token: string, params?: Record<string, any>): Promise<ApiResponse<any>> {
+  async getUsers(token: string, params?: QueryParams): Promise<ApiResponse<unknown>> {
     let queryString = '';
     if (params) {
       const urlParams = new URLSearchParams();
@@ -157,7 +170,7 @@ class ApiService {
       // Handle filter parameters with filter[field] format
       if (params.filters) {
         Object.keys(params.filters).forEach(key => {
-          const value = params.filters[key];
+          const value = params.filters![key];
           if (value && value.trim() !== '') {
             urlParams.append(`filter[${key}]`, value.trim());
           }
@@ -179,7 +192,7 @@ class ApiService {
   }
 
   // Mangas management
-  async getMangas(token: string, params?: Record<string, any>): Promise<ApiResponse<any>> {
+  async getMangas(token: string, params?: QueryParams): Promise<ApiResponse<unknown>> {
     let queryString = '';
     if (params) {
       const urlParams = new URLSearchParams();
@@ -193,7 +206,7 @@ class ApiService {
       // Handle filter parameters with filter[field] format
       if (params.filters) {
         Object.keys(params.filters).forEach(key => {
-          const value = params.filters[key];
+          const value = params.filters![key];
           if (value && value.toString().trim() !== '') {
             urlParams.append(`filter[${key}]`, value.toString().trim());
           }
@@ -211,7 +224,7 @@ class ApiService {
     return this.handleResponse(response);
   }
 
-  async updateMangaStatus(token: string, mangaId: string, isReviewed: boolean): Promise<ApiResponse<any>> {
+  async updateMangaStatus(token: string, mangaId: string, isReviewed: boolean): Promise<ApiResponse<unknown>> {
     const response = await fetch(`${API_BASE_URL}/mangas/${mangaId}`, {
       method: 'PUT',
       headers: this.getHeaders(token),
@@ -221,7 +234,7 @@ class ApiService {
     return this.handleResponse(response);
   }
 
-  async deleteManga(token: string, mangaId: string): Promise<ApiResponse<any>> {
+  async deleteManga(token: string, mangaId: string): Promise<ApiResponse<unknown>> {
     const response = await fetch(`${API_BASE_URL}/mangas/${mangaId}`, {
       method: 'DELETE',
       headers: this.getHeaders(token),
@@ -239,7 +252,7 @@ class ApiService {
     return this.handleResponse(response);
   }
 
-  async getMangaById(token: string, mangaId: string): Promise<ApiResponse<any>> {
+  async getMangaById(token: string, mangaId: string): Promise<ApiResponse<unknown>> {
     const response = await fetch(`${API_BASE_URL}/mangas/${mangaId}?include=group,user,genres,artist,doujinshi`, {
       method: 'GET',
       headers: this.getHeaders(token),
@@ -248,7 +261,7 @@ class ApiService {
     return this.handleResponse(response);
   }
 
-  async updateManga(token: string, mangaId: string, formData: FormData): Promise<ApiResponse<any>> {
+  async updateManga(token: string, mangaId: string, formData: FormData): Promise<ApiResponse<unknown>> {
     const headers: HeadersInit = {
       'Accept': 'application/json',
     };
@@ -266,7 +279,7 @@ class ApiService {
     return this.handleResponse(response);
   }
 
-  async updateMangaJSON(token: string, mangaId: string, data: Record<string, any>): Promise<ApiResponse<any>> {
+  async updateMangaJSON(token: string, mangaId: string, data: Record<string, unknown>): Promise<ApiResponse<unknown>> {
     const response = await fetch(`${API_BASE_URL}/mangas/${mangaId}`, {
       method: 'PUT',
       headers: this.getHeaders(token),
@@ -276,7 +289,7 @@ class ApiService {
     return this.handleResponse(response);
   }
 
-  async createManga(token: string, payload: FormData | Record<string, any>): Promise<ApiResponse<any>> {
+  async createManga(token: string, payload: FormData | Record<string, unknown>): Promise<ApiResponse<unknown>> {
     if (payload instanceof FormData) {
       const headers: HeadersInit = {
         'Accept': 'application/json',
@@ -305,7 +318,7 @@ class ApiService {
   }
 
   // Chapters management
-  async getChapters(token: string, params?: Record<string, any>): Promise<ApiResponse<any>> {
+  async getChapters(token: string, params?: QueryParams): Promise<ApiResponse<unknown>> {
     let queryString = '';
     if (params) {
       const urlParams = new URLSearchParams();
@@ -318,7 +331,7 @@ class ApiService {
       // Handle filter parameters with filter[field] format
       if (params.filters) {
         Object.keys(params.filters).forEach(key => {
-          const value = params.filters[key];
+          const value = params.filters![key];
           if (value && value.toString().trim() !== '') {
             urlParams.append(`filter[${key}]`, value.toString().trim());
           }
@@ -336,7 +349,7 @@ class ApiService {
     return this.handleResponse(response);
   }
 
-  async deleteChapter(token: string, chapterId: string): Promise<ApiResponse<any>> {
+  async deleteChapter(token: string, chapterId: string): Promise<ApiResponse<unknown>> {
     const response = await fetch(`${API_BASE_URL}/chapters/${chapterId}`, {
       method: 'DELETE',
       headers: this.getHeaders(token),
@@ -354,7 +367,7 @@ class ApiService {
     return this.handleResponse(response);
   }
 
-  async getChapterById(token: string, chapterId: string): Promise<ApiResponse<any>> {
+  async getChapterById(token: string, chapterId: string): Promise<ApiResponse<unknown>> {
     const response = await fetch(`${API_BASE_URL}/chapters/${chapterId}`, {
       method: 'GET',
       headers: this.getHeaders(token),
@@ -367,7 +380,7 @@ class ApiService {
     token: string,
     chapterId: string,
     data: { name: string; imageUrls?: string[] }
-  ): Promise<ApiResponse<any>> {
+  ): Promise<ApiResponse<unknown>> {
     const formData = new FormData();
     formData.append('name', data.name);
 
@@ -398,7 +411,7 @@ class ApiService {
     return this.handleResponse(response);
   }
 
-  async clearChapterImages(token: string, chapterId: string): Promise<ApiResponse<any>> {
+  async clearChapterImages(token: string, chapterId: string): Promise<ApiResponse<unknown>> {
     const headers: HeadersInit = {
       'Accept': 'application/json',
     };
@@ -415,7 +428,7 @@ class ApiService {
     return this.handleResponse(response);
   }
 
-  async uploadChapterImage(token: string, chapterId: string, file: File): Promise<ApiResponse<any>> {
+  async uploadChapterImage(token: string, chapterId: string, file: File): Promise<ApiResponse<unknown>> {
     const formData = new FormData();
     formData.append('image', file);
 
@@ -436,7 +449,7 @@ class ApiService {
     return this.handleResponse(response);
   }
 
-  async createChapter(token: string, mangaId: string, name: string): Promise<ApiResponse<any>> {
+  async createChapter(token: string, mangaId: string, name: string): Promise<ApiResponse<unknown>> {
     const formData = new FormData();
     formData.append('name', name);
     formData.append('manga_id', mangaId);
@@ -458,8 +471,8 @@ class ApiService {
     return this.handleResponse(response);
   }
 
-  async deleteManyChapters(token: string, chapterIds: string[]): Promise<ApiResponse<any>> {
-    const response = await fetch(`${API_BASE_URL}/chapters/delete-many`, {
+  async deleteMunknownChapters(token: string, chapterIds: string[]): Promise<ApiResponse<unknown>> {
+    const response = await fetch(`${API_BASE_URL}/chapters/delete-munknown`, {
       method: 'PUT',
       headers: this.getHeaders(token),
       body: JSON.stringify({ ids: chapterIds }),
@@ -469,7 +482,7 @@ class ApiService {
   }
 
   // Genres management
-  async getGenres(token: string): Promise<ApiResponse<any>> {
+  async getGenres(token: string): Promise<ApiResponse<unknown>> {
     const response = await fetch(`${API_BASE_URL}/genres`, {
       method: 'GET',
       headers: this.getHeaders(token),
@@ -478,7 +491,7 @@ class ApiService {
     return this.handleResponse(response);
   }
 
-  async getGenresAll(token: string): Promise<ApiResponse<any>> {
+  async getGenresAll(token: string): Promise<ApiResponse<unknown>> {
     const response = await fetch(`${API_BASE_URL}/genres?per_page=999999`, {
       method: 'GET',
       headers: this.getHeaders(token),
@@ -487,7 +500,7 @@ class ApiService {
     return this.handleResponse(response);
   }
 
-  async getGenresWithParams(token: string, params?: Record<string, any>): Promise<ApiResponse<any>> {
+  async getGenresWithParams(token: string, params?: QueryParams): Promise<ApiResponse<unknown>> {
     let queryString = '';
     if (params) {
       const urlParams = new URLSearchParams();
@@ -500,7 +513,7 @@ class ApiService {
       // Handle filter parameters with filter[field] format
       if (params.filters) {
         Object.keys(params.filters).forEach(key => {
-          const value = params.filters[key];
+          const value = params.filters![key];
           if (value && value.toString().trim() !== '') {
             urlParams.append(`filter[${key}]`, value.toString().trim());
           }
@@ -518,7 +531,7 @@ class ApiService {
     return this.handleResponse(response);
   }
 
-  async getGenreById(token: string, genreId: string): Promise<ApiResponse<any>> {
+  async getGenreById(token: string, genreId: string): Promise<ApiResponse<unknown>> {
     const response = await fetch(`${API_BASE_URL}/genres/${genreId}`, {
       method: 'GET',
       headers: this.getHeaders(token),
@@ -527,7 +540,7 @@ class ApiService {
     return this.handleResponse(response);
   }
 
-  async createGenre(token: string, data: { name: string }): Promise<ApiResponse<any>> {
+  async createGenre(token: string, data: { name: string }): Promise<ApiResponse<unknown>> {
     const response = await fetch(`${API_BASE_URL}/genres`, {
       method: 'POST',
       headers: this.getHeaders(token),
@@ -537,7 +550,7 @@ class ApiService {
     return this.handleResponse(response);
   }
 
-  async updateGenre(token: string, genreId: string, data: Record<string, any>): Promise<ApiResponse<any>> {
+  async updateGenre(token: string, genreId: string, data: Record<string, unknown>): Promise<ApiResponse<unknown>> {
     const response = await fetch(`${API_BASE_URL}/genres/${genreId}`, {
       method: 'PUT',
       headers: this.getHeaders(token),
@@ -547,7 +560,7 @@ class ApiService {
     return this.handleResponse(response);
   }
 
-  async deleteGenre(token: string, genreId: string): Promise<ApiResponse<any>> {
+  async deleteGenre(token: string, genreId: string): Promise<ApiResponse<unknown>> {
     const response = await fetch(`${API_BASE_URL}/genres/${genreId}`, {
       method: 'DELETE',
       headers: this.getHeaders(token),
@@ -566,7 +579,7 @@ class ApiService {
   }
 
   // User management actions
-  async banUser(token: string, userId: string, banDuration?: string): Promise<ApiResponse<any>> {
+  async banUser(token: string, userId: string, banDuration?: string): Promise<ApiResponse<unknown>> {
     const response = await fetch(`${API_BASE_URL}/users/${userId}/ban`, {
       method: 'POST',
       headers: this.getHeaders(token),
@@ -576,7 +589,7 @@ class ApiService {
     return this.handleResponse(response);
   }
 
-  async unbanUser(token: string, userId: string): Promise<ApiResponse<any>> {
+  async unbanUser(token: string, userId: string): Promise<ApiResponse<unknown>> {
     const response = await fetch(`${API_BASE_URL}/users/${userId}/unban`, {
       method: 'POST',
       headers: this.getHeaders(token),
@@ -585,7 +598,7 @@ class ApiService {
     return this.handleResponse(response);
   }
 
-  async deleteUserComments(token: string, userId: string): Promise<ApiResponse<any>> {
+  async deleteUserComments(token: string, userId: string): Promise<ApiResponse<unknown>> {
     const response = await fetch(`${API_BASE_URL}/users/${userId}/delete-comment`, {
       method: 'DELETE',
       headers: this.getHeaders(token),
@@ -595,7 +608,7 @@ class ApiService {
   }
 
   // Autocomplete search endpoints
-  async searchGroups(token: string, query: string): Promise<ApiResponse<any>> {
+  async searchGroups(token: string, query: string): Promise<ApiResponse<unknown>> {
     const urlParams = new URLSearchParams();
     urlParams.append('filter[name]', query);
 
@@ -607,7 +620,7 @@ class ApiService {
     return this.handleResponse(response);
   }
 
-  async searchArtists(token: string, query: string): Promise<ApiResponse<any>> {
+  async searchArtists(token: string, query: string): Promise<ApiResponse<unknown>> {
     const urlParams = new URLSearchParams();
     urlParams.append('filter[name]', query);
 
@@ -619,7 +632,7 @@ class ApiService {
     return this.handleResponse(response);
   }
 
-  async searchDoujinshis(token: string, query: string): Promise<ApiResponse<any>> {
+  async searchDoujinshis(token: string, query: string): Promise<ApiResponse<unknown>> {
     const urlParams = new URLSearchParams();
     urlParams.append('filter[name]', query);
 
@@ -631,7 +644,7 @@ class ApiService {
     return this.handleResponse(response);
   }
 
-  async searchUsers(token: string, query: string): Promise<ApiResponse<any>> {
+  async searchUsers(token: string, query: string): Promise<ApiResponse<unknown>> {
     const urlParams = new URLSearchParams();
     urlParams.append('filter[name]', query);
 
@@ -643,7 +656,7 @@ class ApiService {
     return this.handleResponse(response);
   }
 
-  async searchMangas(token: string, query: string): Promise<ApiResponse<any>> {
+  async searchMangas(token: string, query: string): Promise<ApiResponse<unknown>> {
     const urlParams = new URLSearchParams();
     urlParams.append('filter[name]', query);
 
@@ -656,7 +669,7 @@ class ApiService {
   }
 
   // Artists management
-  async getArtists(token: string, params?: Record<string, any>): Promise<ApiResponse<any>> {
+  async getArtists(token: string, params?: QueryParams): Promise<ApiResponse<unknown>> {
     let queryString = '';
     if (params) {
       const urlParams = new URLSearchParams();
@@ -670,7 +683,7 @@ class ApiService {
       // Handle filter parameters with filter[field] format
       if (params.filters) {
         Object.keys(params.filters).forEach(key => {
-          const value = params.filters[key];
+          const value = params.filters![key];
           if (value && value.toString().trim() !== '') {
             urlParams.append(`filter[${key}]`, value.toString().trim());
           }
@@ -688,7 +701,7 @@ class ApiService {
     return this.handleResponse(response);
   }
 
-  async deleteArtist(token: string, artistId: string): Promise<ApiResponse<any>> {
+  async deleteArtist(token: string, artistId: string): Promise<ApiResponse<unknown>> {
     const response = await fetch(`${API_BASE_URL}/artists/${artistId}`, {
       method: 'DELETE',
       headers: this.getHeaders(token),
@@ -706,7 +719,7 @@ class ApiService {
     return this.handleResponse(response);
   }
 
-  async updateArtist(token: string, artistId: string, data: { name: string }): Promise<ApiResponse<any>> {
+  async updateArtist(token: string, artistId: string, data: { name: string }): Promise<ApiResponse<unknown>> {
     const response = await fetch(`${API_BASE_URL}/artists/${artistId}`, {
       method: 'PUT',
       headers: this.getHeaders(token),
@@ -716,7 +729,7 @@ class ApiService {
     return this.handleResponse(response);
   }
 
-  async createArtist(token: string, data: { name: string }): Promise<ApiResponse<any>> {
+  async createArtist(token: string, data: { name: string }): Promise<ApiResponse<unknown>> {
     const response = await fetch(`${API_BASE_URL}/artists`, {
       method: 'POST',
       headers: this.getHeaders(token),
@@ -727,7 +740,7 @@ class ApiService {
   }
 
   // Groups management
-  async getGroups(token: string, params?: Record<string, any>): Promise<ApiResponse<any>> {
+  async getGroups(token: string, params?: QueryParams): Promise<ApiResponse<unknown>> {
     let queryString = '';
     if (params) {
       const urlParams = new URLSearchParams();
@@ -741,7 +754,7 @@ class ApiService {
       // Handle filter parameters with filter[field] format
       if (params.filters) {
         Object.keys(params.filters).forEach(key => {
-          const value = params.filters[key];
+          const value = params.filters![key];
           if (value && value.toString().trim() !== '') {
             urlParams.append(`filter[${key}]`, value.toString().trim());
           }
@@ -759,7 +772,7 @@ class ApiService {
     return this.handleResponse(response);
   }
 
-  async getGroupById(token: string, groupId: string): Promise<ApiResponse<any>> {
+  async getGroupById(token: string, groupId: string): Promise<ApiResponse<unknown>> {
     const response = await fetch(`${API_BASE_URL}/groups/${groupId}`, {
       method: 'GET',
       headers: this.getHeaders(token),
@@ -768,7 +781,7 @@ class ApiService {
     return this.handleResponse(response);
   }
 
-  async createGroup(token: string, data: { name: string }): Promise<ApiResponse<any>> {
+  async createGroup(token: string, data: { name: string }): Promise<ApiResponse<unknown>> {
     const response = await fetch(`${API_BASE_URL}/groups`, {
       method: 'POST',
       headers: this.getHeaders(token),
@@ -778,7 +791,7 @@ class ApiService {
     return this.handleResponse(response);
   }
 
-  async updateGroup(token: string, groupId: string, data: { name: string }): Promise<ApiResponse<any>> {
+  async updateGroup(token: string, groupId: string, data: { name: string }): Promise<ApiResponse<unknown>> {
     const response = await fetch(`${API_BASE_URL}/groups/${groupId}`, {
       method: 'PUT',
       headers: this.getHeaders(token),
@@ -788,7 +801,7 @@ class ApiService {
     return this.handleResponse(response);
   }
 
-  async deleteGroup(token: string, groupId: string): Promise<ApiResponse<any>> {
+  async deleteGroup(token: string, groupId: string): Promise<ApiResponse<unknown>> {
     const response = await fetch(`${API_BASE_URL}/groups/${groupId}`, {
       method: 'DELETE',
       headers: this.getHeaders(token),
@@ -807,7 +820,7 @@ class ApiService {
   }
 
   // Achievements management
-  async getAchievements(token: string, params?: Record<string, any>): Promise<ApiResponse<any>> {
+  async getAchievements(token: string, params?: QueryParams): Promise<ApiResponse<unknown>> {
     let queryString = '';
     if (params) {
       const urlParams = new URLSearchParams();
@@ -821,7 +834,7 @@ class ApiService {
       // Handle filter parameters with filter[field] format
       if (params.filters) {
         Object.keys(params.filters).forEach(key => {
-          const value = params.filters[key];
+          const value = params.filters![key];
           if (value && value.toString().trim() !== '') {
             urlParams.append(`filter[${key}]`, value.toString().trim());
           }
@@ -839,7 +852,7 @@ class ApiService {
     return this.handleResponse(response);
   }
 
-  async getAchievementById(token: string, achievementId: string): Promise<ApiResponse<any>> {
+  async getAchievementById(token: string, achievementId: string): Promise<ApiResponse<unknown>> {
     const response = await fetch(`${API_BASE_URL}/achievements/${achievementId}`, {
       method: 'GET',
       headers: this.getHeaders(token),
@@ -857,7 +870,7 @@ class ApiService {
     font_style: string;
     text_shadow: string;
     required_points: number;
-  }): Promise<ApiResponse<any>> {
+  }): Promise<ApiResponse<unknown>> {
     const response = await fetch(`${API_BASE_URL}/achievements`, {
       method: 'POST',
       headers: this.getHeaders(token),
@@ -876,7 +889,7 @@ class ApiService {
     font_style: string;
     text_shadow: string;
     required_points: number;
-  }): Promise<ApiResponse<any>> {
+  }): Promise<ApiResponse<unknown>> {
     const response = await fetch(`${API_BASE_URL}/achievements/${achievementId}`, {
       method: 'PUT',
       headers: this.getHeaders(token),
@@ -886,7 +899,7 @@ class ApiService {
     return this.handleResponse(response);
   }
 
-  async deleteAchievement(token: string, achievementId: string): Promise<ApiResponse<any>> {
+  async deleteAchievement(token: string, achievementId: string): Promise<ApiResponse<unknown>> {
     const response = await fetch(`${API_BASE_URL}/achievements/${achievementId}`, {
       method: 'DELETE',
       headers: this.getHeaders(token),
@@ -905,7 +918,7 @@ class ApiService {
   }
 
   // Doujinshis management
-  async getDoujinshis(token: string, params?: Record<string, any>): Promise<ApiResponse<any>> {
+  async getDoujinshis(token: string, params?: QueryParams): Promise<ApiResponse<unknown>> {
     let queryString = '';
     if (params) {
       const urlParams = new URLSearchParams();
@@ -919,7 +932,7 @@ class ApiService {
       // Handle filter parameters with filter[field] format
       if (params.filters) {
         Object.keys(params.filters).forEach(key => {
-          const value = params.filters[key];
+          const value = params.filters![key];
           if (value && value.toString().trim() !== '') {
             urlParams.append(`filter[${key}]`, value.toString().trim());
           }
@@ -937,7 +950,7 @@ class ApiService {
     return this.handleResponse(response);
   }
 
-  async deleteDoujinshi(token: string, doujinshiId: string): Promise<ApiResponse<any>> {
+  async deleteDoujinshi(token: string, doujinshiId: string): Promise<ApiResponse<unknown>> {
     const response = await fetch(`${API_BASE_URL}/doujinshis/${doujinshiId}`, {
       method: 'DELETE',
       headers: this.getHeaders(token),
@@ -955,7 +968,7 @@ class ApiService {
     return this.handleResponse(response);
   }
 
-  async updateDoujinshi(token: string, doujinshiId: string, data: { name: string }): Promise<ApiResponse<any>> {
+  async updateDoujinshi(token: string, doujinshiId: string, data: { name: string }): Promise<ApiResponse<unknown>> {
     const response = await fetch(`${API_BASE_URL}/doujinshis/${doujinshiId}`, {
       method: 'PUT',
       headers: this.getHeaders(token),
@@ -965,7 +978,7 @@ class ApiService {
     return this.handleResponse(response);
   }
 
-  async createDoujinshi(token: string, data: { name: string }): Promise<ApiResponse<any>> {
+  async createDoujinshi(token: string, data: { name: string }): Promise<ApiResponse<unknown>> {
     const response = await fetch(`${API_BASE_URL}/doujinshis`, {
       method: 'POST',
       headers: this.getHeaders(token),
@@ -976,7 +989,7 @@ class ApiService {
   }
 
   // Pets management
-  async getPets(token: string, params?: Record<string, any>): Promise<ApiResponse<any>> {
+  async getPets(token: string, params?: QueryParams): Promise<ApiResponse<unknown>> {
     let queryString = '';
     if (params) {
       const urlParams = new URLSearchParams();
@@ -990,7 +1003,7 @@ class ApiService {
       // Handle filter parameters with filter[field] format
       if (params.filters) {
         Object.keys(params.filters).forEach(key => {
-          const value = params.filters[key];
+          const value = params.filters![key];
           if (value && value.toString().trim() !== '') {
             urlParams.append(`filter[${key}]`, value.toString().trim());
           }
@@ -1008,7 +1021,7 @@ class ApiService {
     return this.handleResponse(response);
   }
 
-  async deletePet(token: string, petId: string): Promise<ApiResponse<any>> {
+  async deletePet(token: string, petId: string): Promise<ApiResponse<unknown>> {
     const response = await fetch(`${API_BASE_URL}/pets/${petId}`, {
       method: 'DELETE',
       headers: this.getHeaders(token),
@@ -1026,7 +1039,7 @@ class ApiService {
     return this.handleResponse(response);
   }
 
-  async updatePet(token: string, petId: string, formData: FormData): Promise<ApiResponse<any>> {
+  async updatePet(token: string, petId: string, formData: FormData): Promise<ApiResponse<unknown>> {
     const headers: HeadersInit = {
       'Accept': 'application/json',
     };
@@ -1047,7 +1060,7 @@ class ApiService {
     return this.handleResponse(response);
   }
 
-  async createPet(token: string, formData: FormData): Promise<ApiResponse<any>> {
+  async createPet(token: string, formData: FormData): Promise<ApiResponse<unknown>> {
     const headers: HeadersInit = {
       'Accept': 'application/json',
     };
@@ -1066,7 +1079,7 @@ class ApiService {
   }
 
   // Comments management
-  async getComments(token: string, params?: Record<string, any>): Promise<ApiResponse<any>> {
+  async getComments(token: string, params?: QueryParams): Promise<ApiResponse<unknown>> {
     let queryString = '';
     if (params) {
       const urlParams = new URLSearchParams();
@@ -1080,7 +1093,7 @@ class ApiService {
       // Handle filter parameters with filter[field] format
       if (params.filters) {
         Object.keys(params.filters).forEach(key => {
-          const value = params.filters[key];
+          const value = params.filters![key];
           if (value && value.toString().trim() !== '') {
             urlParams.append(`filter[${key}]`, value.toString().trim());
           }
@@ -1098,7 +1111,7 @@ class ApiService {
     return this.handleResponse(response);
   }
 
-  async deleteComment(token: string, commentId: string): Promise<ApiResponse<any>> {
+  async deleteComment(token: string, commentId: string): Promise<ApiResponse<unknown>> {
     const response = await fetch(`${API_BASE_URL}/comments/${commentId}`, {
       method: 'DELETE',
       headers: this.getHeaders(token),
@@ -1116,7 +1129,7 @@ class ApiService {
     return this.handleResponse(response);
   }
 
-  async updateComment(token: string, commentId: string, data: Record<string, any>): Promise<ApiResponse<any>> {
+  async updateComment(token: string, commentId: string, data: Record<string, unknown>): Promise<ApiResponse<unknown>> {
     const response = await fetch(`${API_BASE_URL}/comments/${commentId}`, {
       method: 'PUT',
       headers: this.getHeaders(token),
@@ -1126,7 +1139,7 @@ class ApiService {
     return this.handleResponse(response);
   }
 
-  async getCommentThread(token: string, commentId: string): Promise<ApiResponse<any>> {
+  async getCommentThread(token: string, commentId: string): Promise<ApiResponse<unknown>> {
     const response = await fetch(
       `${API_BASE_URL}/comments/${commentId}?include=user,commentable,childes`,
       {
@@ -1144,7 +1157,7 @@ class ApiService {
     commentable_id: string;
     commentable_type: string;
     user_id?: string;
-  }): Promise<ApiResponse<any>> {
+  }): Promise<ApiResponse<unknown>> {
     const response = await fetch(`${API_BASE_URL}/comments`, {
       method: 'POST',
       headers: this.getHeaders(token),
@@ -1164,7 +1177,7 @@ class ApiService {
     return this.handleResponse<{ html: string }>(response);
   }
 
-  async saveAnnouncement(token: string, html: string): Promise<ApiResponse<any>> {
+  async saveAnnouncement(token: string, html: string): Promise<ApiResponse<unknown>> {
     const response = await fetch(`${API_BASE_URL}/statics/announcement`, {
       method: 'POST',
       headers: this.getHeaders(token),
