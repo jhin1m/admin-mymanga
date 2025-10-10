@@ -1,6 +1,6 @@
 "use client";
-import React, { useState, useEffect } from "react";
-import { useParams, useRouter } from "next/navigation";
+import React, { useState, useEffect, useCallback } from "react";
+import { useParams } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { apiService } from "@/services/api";
 import ChapterInfoForm from "@/components/manga/ChapterInfoForm";
@@ -22,9 +22,15 @@ interface Chapter {
   updated_at: string;
 }
 
+interface ChapterApiResponse {
+  success: boolean;
+  data: Chapter;
+  message?: string;
+  code: number;
+}
+
 const ChapterEditPage = () => {
   const params = useParams();
-  const router = useRouter();
   const { token } = useAuth();
   const chapterId = params.id as string;
 
@@ -73,31 +79,32 @@ const ChapterEditPage = () => {
     });
   };
 
-  const fetchChapterData = async () => {
+  const fetchChapterData = useCallback(async () => {
     if (!token || !chapterId) return;
 
     setLoading(true);
     try {
-      const response = await apiService.getChapterById(token, chapterId);
+      const response = await apiService.getChapterById(token, chapterId) as ChapterApiResponse;
 
       if (response.success && response.data) {
-        const data = response.data as Chapter;
+        const data = response.data;
         setChapter(data);
         setChapterName(data.name);
         setImages(data.content || []);
         setLastUpdated(formatDateTime(data.updated_at));
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error fetching chapter:", error);
-      showAlert("error", "Lỗi tải dữ liệu", error.message || "Không thể tải thông tin chương");
+      const errorMessage = error instanceof Error ? error.message : "Không thể tải thông tin chương";
+      showAlert("error", "Lỗi tải dữ liệu", errorMessage);
     } finally {
       setLoading(false);
     }
-  };
+  }, [token, chapterId]);
 
   useEffect(() => {
     fetchChapterData();
-  }, [token, chapterId]);
+  }, [fetchChapterData]);
 
   const handleSaveClick = async () => {
     // Validation
@@ -165,9 +172,9 @@ const ChapterEditPage = () => {
               return newMap;
             });
             successCount++;
-          } catch (error: any) {
+          } catch (error: unknown) {
             console.error(`Error uploading image ${i + 1}:`, error);
-            const errorMsg = error.message || "Lỗi tải lên";
+            const errorMsg = error instanceof Error ? error.message : "Lỗi tải lên";
             uploadErrors.push(`Ảnh ${i + 1}: ${errorMsg}`);
 
             // Update status to error
@@ -200,11 +207,17 @@ const ChapterEditPage = () => {
         showAlert("success", "Thành công", "Đã cập nhật chương thành công");
         await fetchChapterData();
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error saving chapter:", error);
-      const errorMessage = error.errors
-        ? Object.values(error.errors).flat().join(", ")
-        : error.message || "Có lỗi xảy ra khi lưu chương";
+      let errorMessage = "Có lỗi xảy ra khi lưu chương";
+
+      if (error && typeof error === 'object' && 'errors' in error) {
+        const errorObj = error as { errors: Record<string, string[]> };
+        errorMessage = Object.values(errorObj.errors).flat().join(", ");
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+
       showAlert("error", "Lỗi", errorMessage);
     } finally {
       setSaving(false);
