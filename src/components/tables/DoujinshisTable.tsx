@@ -39,6 +39,20 @@ interface SearchFilters {
   name: string;
 }
 
+interface DoujinshisApiResponse {
+  success: boolean;
+  data: Doujinshi[];
+  pagination?: {
+    count: number;
+    total: number;
+    perPage: number;
+    currentPage: number;
+    totalPages: number;
+  };
+  message?: string;
+  code: number;
+}
+
 interface DoujinshisTableProps {
   searchFilters?: SearchFilters;
 }
@@ -82,7 +96,7 @@ const DoujinshisTable: React.FC<DoujinshisTableProps> = ({ searchFilters }) => {
 
       setLoading(true);
       try {
-        const params: Record<string, any> = {
+        const params: Record<string, unknown> = {
           page: page,
           per_page: pagination.perPage,
           sort: "-created_at",
@@ -102,7 +116,7 @@ const DoujinshisTable: React.FC<DoujinshisTableProps> = ({ searchFilters }) => {
           }
         }
 
-        const response = await apiService.getDoujinshis(token, params);
+        const response = await apiService.getDoujinshis(token, params) as DoujinshisApiResponse;
 
         if (response.success && response.data) {
           setDoujinshis(response.data);
@@ -127,7 +141,7 @@ const DoujinshisTable: React.FC<DoujinshisTableProps> = ({ searchFilters }) => {
 
   useEffect(() => {
     fetchDoujinshis(1, searchFilters);
-  }, [searchFilters]);
+  }, [searchFilters, fetchDoujinshis]);
 
   const handlePageChange = (page: number) => {
     fetchDoujinshis(page, searchFilters);
@@ -186,10 +200,10 @@ const DoujinshisTable: React.FC<DoujinshisTableProps> = ({ searchFilters }) => {
       setDoujinshiToEdit(null);
       // Refresh the list after create/update
       await fetchDoujinshis(pagination.currentPage, searchFilters);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error submitting form:", error);
       const errorMessage =
-        error?.message || "Có lỗi xảy ra khi thực hiện hành động này";
+        error instanceof Error ? error.message : "Có lỗi xảy ra khi thực hiện hành động này";
       alert(errorMessage);
     } finally {
       setFormLoading(false);

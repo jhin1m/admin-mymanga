@@ -55,6 +55,20 @@ interface SearchFilters {
   created_at_end: string;
 }
 
+interface CommentsApiResponse {
+  success: boolean;
+  data: Comment[];
+  pagination?: {
+    count: number;
+    total: number;
+    perPage: number;
+    currentPage: number;
+    totalPages: number;
+  };
+  message?: string;
+  code: number;
+}
+
 interface CommentsTableProps {
   searchFilters?: SearchFilters;
 }
@@ -107,7 +121,7 @@ const CommentsTable: React.FC<CommentsTableProps> = ({ searchFilters }) => {
 
       setLoading(true);
       try {
-        const params: Record<string, any> = {
+        const params: Record<string, unknown> = {
           page: page,
           per_page: pagination.perPage,
           sort: "-created_at",
@@ -135,7 +149,7 @@ const CommentsTable: React.FC<CommentsTableProps> = ({ searchFilters }) => {
           }
         }
 
-        const response = await apiService.getComments(token, params);
+        const response = await apiService.getComments(token, params) as CommentsApiResponse;
 
         if (response.success && response.data) {
           setComments(response.data);
@@ -160,7 +174,7 @@ const CommentsTable: React.FC<CommentsTableProps> = ({ searchFilters }) => {
 
   useEffect(() => {
     fetchComments(1, searchFilters);
-  }, [searchFilters]);
+  }, [searchFilters, fetchComments]);
 
   const handlePageChange = (page: number) => {
     fetchComments(page, searchFilters);
@@ -199,15 +213,15 @@ const CommentsTable: React.FC<CommentsTableProps> = ({ searchFilters }) => {
 
     setFormLoading(true);
     try {
-      await apiService.updateComment(token, commentToEdit.id, data);
+      await apiService.updateComment(token, commentToEdit.id, data as unknown as Record<string, unknown>);
       setFormModalOpen(false);
       setCommentToEdit(null);
       // Refresh the list after update
       await fetchComments(pagination.currentPage, searchFilters);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error updating comment:", error);
       const errorMessage =
-        error?.message || "Có lỗi xảy ra khi cập nhật comment";
+        error instanceof Error ? error.message : "Có lỗi xảy ra khi cập nhật comment";
       alert(errorMessage);
     } finally {
       setFormLoading(false);

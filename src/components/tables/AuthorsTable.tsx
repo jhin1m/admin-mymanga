@@ -39,6 +39,20 @@ interface SearchFilters {
   name: string;
 }
 
+interface AuthorsApiResponse {
+  success: boolean;
+  data: Artist[];
+  pagination?: {
+    count: number;
+    total: number;
+    perPage: number;
+    currentPage: number;
+    totalPages: number;
+  };
+  message?: string;
+  code: number;
+}
+
 interface AuthorsTableProps {
   searchFilters?: SearchFilters;
 }
@@ -82,7 +96,7 @@ const AuthorsTable: React.FC<AuthorsTableProps> = ({ searchFilters }) => {
 
       setLoading(true);
       try {
-        const params: Record<string, any> = {
+        const params: Record<string, unknown> = {
           page: page,
           per_page: pagination.perPage,
           sort: "-created_at",
@@ -102,7 +116,7 @@ const AuthorsTable: React.FC<AuthorsTableProps> = ({ searchFilters }) => {
           }
         }
 
-        const response = await apiService.getArtists(token, params);
+        const response = await apiService.getArtists(token, params) as AuthorsApiResponse;
 
         if (response.success && response.data) {
           setArtists(response.data);
@@ -127,7 +141,7 @@ const AuthorsTable: React.FC<AuthorsTableProps> = ({ searchFilters }) => {
 
   useEffect(() => {
     fetchArtists(1, searchFilters);
-  }, [searchFilters]);
+  }, [searchFilters, fetchArtists]);
 
   const handlePageChange = (page: number) => {
     fetchArtists(page, searchFilters);
@@ -186,10 +200,10 @@ const AuthorsTable: React.FC<AuthorsTableProps> = ({ searchFilters }) => {
       setArtistToEdit(null);
       // Refresh the list after create/update
       await fetchArtists(pagination.currentPage, searchFilters);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error submitting form:", error);
       const errorMessage =
-        error?.message || "Có lỗi xảy ra khi thực hiện hành động này";
+        error instanceof Error ? error.message : "Có lỗi xảy ra khi thực hiện hành động này";
       alert(errorMessage);
     } finally {
       setFormLoading(false);

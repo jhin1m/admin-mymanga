@@ -44,6 +44,20 @@ interface SearchFilters {
   name: string;
 }
 
+interface AchievementsApiResponse {
+  success: boolean;
+  data: Achievement[];
+  pagination?: {
+    count: number;
+    total: number;
+    perPage: number;
+    currentPage: number;
+    totalPages: number;
+  };
+  message?: string;
+  code: number;
+}
+
 interface AchievementsTableProps {
   searchFilters?: SearchFilters;
 }
@@ -87,7 +101,7 @@ const AchievementsTable: React.FC<AchievementsTableProps> = ({ searchFilters }) 
 
       setLoading(true);
       try {
-        const params: Record<string, any> = {
+        const params: Record<string, unknown> = {
           page: page,
           per_page: pagination.perPage,
           sort: "-created_at",
@@ -107,7 +121,7 @@ const AchievementsTable: React.FC<AchievementsTableProps> = ({ searchFilters }) 
           }
         }
 
-        const response = await apiService.getAchievements(token, params);
+        const response = await apiService.getAchievements(token, params) as AchievementsApiResponse;
 
         if (response.success && response.data) {
           setAchievements(response.data);
@@ -132,7 +146,7 @@ const AchievementsTable: React.FC<AchievementsTableProps> = ({ searchFilters }) 
 
   useEffect(() => {
     fetchAchievements(1, searchFilters);
-  }, [searchFilters]);
+  }, [searchFilters, fetchAchievements]);
 
   const handlePageChange = (page: number) => {
     fetchAchievements(page, searchFilters);
@@ -200,10 +214,10 @@ const AchievementsTable: React.FC<AchievementsTableProps> = ({ searchFilters }) 
       setAchievementToEdit(null);
       // Refresh the list after create/update
       await fetchAchievements(pagination.currentPage, searchFilters);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error submitting form:", error);
       const errorMessage =
-        error?.message || "Có lỗi xảy ra khi thực hiện hành động này";
+        error instanceof Error ? error.message : "Có lỗi xảy ra khi thực hiện hành động này";
       alert(errorMessage);
     } finally {
       setFormLoading(false);

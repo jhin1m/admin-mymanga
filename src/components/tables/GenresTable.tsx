@@ -37,6 +37,20 @@ interface SearchFilters {
   name: string;
 }
 
+interface GenresApiResponse {
+  success: boolean;
+  data: Genre[];
+  pagination?: {
+    count: number;
+    total: number;
+    perPage: number;
+    currentPage: number;
+    totalPages: number;
+  };
+  message?: string;
+  code: number;
+}
+
 interface GenresTableProps {
   searchFilters?: SearchFilters;
 }
@@ -80,7 +94,7 @@ const GenresTable: React.FC<GenresTableProps> = ({ searchFilters }) => {
 
       setLoading(true);
       try {
-        const params: Record<string, any> = {
+        const params: Record<string, unknown> = {
           page: page,
           per_page: pagination.perPage,
           sort: "-id",
@@ -99,7 +113,7 @@ const GenresTable: React.FC<GenresTableProps> = ({ searchFilters }) => {
           }
         }
 
-        const response = await apiService.getGenresWithParams(token, params);
+        const response = await apiService.getGenresWithParams(token, params) as GenresApiResponse;
 
         if (response.success && response.data) {
           setGenres(response.data);
@@ -124,7 +138,7 @@ const GenresTable: React.FC<GenresTableProps> = ({ searchFilters }) => {
 
   useEffect(() => {
     fetchGenres(1, searchFilters);
-  }, [searchFilters]);
+  }, [searchFilters, fetchGenres]);
 
   const handlePageChange = (page: number) => {
     fetchGenres(page, searchFilters);
@@ -153,14 +167,6 @@ const GenresTable: React.FC<GenresTableProps> = ({ searchFilters }) => {
     }
   };
 
-  const handleEditClick = (genreId: number) => {
-    const genre = genres.find((g) => g.id === genreId);
-    if (!genre) return;
-
-    setGenreToEdit(genre);
-    setFormMode("edit");
-    setFormModalOpen(true);
-  };
 
   const handleCreateNew = () => {
     setGenreToEdit(null);
@@ -183,10 +189,10 @@ const GenresTable: React.FC<GenresTableProps> = ({ searchFilters }) => {
       setGenreToEdit(null);
       // Refresh the list after create/update
       await fetchGenres(pagination.currentPage, searchFilters);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error submitting form:", error);
       const errorMessage =
-        error?.message || "Có lỗi xảy ra khi thực hiện hành động này";
+        error instanceof Error ? error.message : "Có lỗi xảy ra khi thực hiện hành động này";
       alert(errorMessage);
     } finally {
       setFormLoading(false);

@@ -39,6 +39,20 @@ interface SearchFilters {
   name: string;
 }
 
+interface GroupsApiResponse {
+  success: boolean;
+  data: Group[];
+  pagination?: {
+    count: number;
+    total: number;
+    perPage: number;
+    currentPage: number;
+    totalPages: number;
+  };
+  message?: string;
+  code: number;
+}
+
 interface GroupsTableProps {
   searchFilters?: SearchFilters;
 }
@@ -82,7 +96,7 @@ const GroupsTable: React.FC<GroupsTableProps> = ({ searchFilters }) => {
 
       setLoading(true);
       try {
-        const params: Record<string, any> = {
+        const params: Record<string, unknown> = {
           page: page,
           per_page: pagination.perPage,
           sort: "-created_at",
@@ -102,7 +116,7 @@ const GroupsTable: React.FC<GroupsTableProps> = ({ searchFilters }) => {
           }
         }
 
-        const response = await apiService.getGroups(token, params);
+        const response = await apiService.getGroups(token, params) as GroupsApiResponse;
 
         if (response.success && response.data) {
           setGroups(response.data);
@@ -127,7 +141,7 @@ const GroupsTable: React.FC<GroupsTableProps> = ({ searchFilters }) => {
 
   useEffect(() => {
     fetchGroups(1, searchFilters);
-  }, [searchFilters]);
+  }, [searchFilters, fetchGroups]);
 
   const handlePageChange = (page: number) => {
     fetchGroups(page, searchFilters);
@@ -186,10 +200,10 @@ const GroupsTable: React.FC<GroupsTableProps> = ({ searchFilters }) => {
       setGroupToEdit(null);
       // Refresh the list after create/update
       await fetchGroups(pagination.currentPage, searchFilters);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error submitting form:", error);
       const errorMessage =
-        error?.message || "Có lỗi xảy ra khi thực hiện hành động này";
+        error instanceof Error ? error.message : "Có lỗi xảy ra khi thực hiện hành động này";
       alert(errorMessage);
     } finally {
       setFormLoading(false);
