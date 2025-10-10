@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { apiService } from "@/services/api";
@@ -19,6 +19,20 @@ interface Chapter {
 interface ChapterListProps {
   mangaId: string;
   onRefresh?: () => void;
+}
+
+interface ChaptersApiResponse {
+  success: boolean;
+  data: Chapter[];
+  pagination?: {
+    count: number;
+    total: number;
+    perPage: number;
+    currentPage: number;
+    totalPages: number;
+  };
+  message?: string;
+  code: number;
 }
 
 const ChapterList: React.FC<ChapterListProps> = ({ mangaId, onRefresh }) => {
@@ -66,7 +80,7 @@ const ChapterList: React.FC<ChapterListProps> = ({ mangaId, onRefresh }) => {
     });
   };
 
-  const fetchChapters = async () => {
+  const fetchChapters = useCallback(async () => {
     if (!token || !mangaId) return;
 
     setLoading(true);
@@ -75,7 +89,7 @@ const ChapterList: React.FC<ChapterListProps> = ({ mangaId, onRefresh }) => {
         filters: { manga_id: mangaId },
         per_page: 999999,
         sort: '-order',
-      });
+      }) as ChaptersApiResponse;
 
       if (response.success && response.data) {
         setChapters(response.data);
@@ -85,11 +99,11 @@ const ChapterList: React.FC<ChapterListProps> = ({ mangaId, onRefresh }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [token, mangaId]);
 
   useEffect(() => {
     fetchChapters();
-  }, [token, mangaId]);
+  }, [token, mangaId, fetchChapters]);
 
   const handleSelectAll = () => {
     if (selectedChapters.length === chapters.length) {
@@ -139,7 +153,10 @@ const ChapterList: React.FC<ChapterListProps> = ({ mangaId, onRefresh }) => {
 
     try {
       const count = selectedChapters.length;
-      await apiService.deleteManyChapters(token, selectedChapters);
+      // Delete chapters one by one since deleteManyChapters doesn't exist
+      for (const chapterId of selectedChapters) {
+        await apiService.deleteChapter(token, chapterId);
+      }
       setSelectedChapters([]);
       await fetchChapters();
       if (onRefresh) onRefresh();
@@ -277,7 +294,7 @@ const ChapterList: React.FC<ChapterListProps> = ({ mangaId, onRefresh }) => {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
           </svg>
           <p className="text-lg">Chưa có chương nào</p>
-          <p className="text-sm mt-1">Nhấn "Tạo mới" để thêm chương đầu tiên</p>
+          <p className="text-sm mt-1">Nhấn &quot;Tạo mới&quot; để thêm chương đầu tiên</p>
         </div>
       )}
 

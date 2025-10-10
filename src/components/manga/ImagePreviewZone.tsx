@@ -196,8 +196,11 @@ const ImagePreviewZone: React.FC<ImagePreviewZoneProps> = ({
   // Generate preview URLs when pendingFiles or uploadStatuses change
   useEffect(() => {
     // Clean up old preview URLs
-    previews.forEach(preview => {
-      URL.revokeObjectURL(preview.previewUrl);
+    setPreviews(oldPreviews => {
+      oldPreviews.forEach(preview => {
+        URL.revokeObjectURL(preview.previewUrl);
+      });
+      return oldPreviews;
     });
 
     // Generate new preview URLs with status
@@ -387,7 +390,7 @@ const ImagePreviewZone: React.FC<ImagePreviewZoneProps> = ({
               Chọn ảnh để xem trước, tối đa 200 ảnh, mỗi ảnh ≤ 3MB
             </p>
             <p className="text-xs text-blue-400 mt-2">
-              Ảnh sẽ được tải lên khi bạn nhấn "Lưu"
+              Ảnh sẽ được tải lên khi bạn nhấn &quot;Lưu&quot;
             </p>
           </div>
         </div>

@@ -95,6 +95,7 @@ const ImageUploadZone: React.FC<ImageUploadZoneProps> = ({
           )
         );
       } catch (error) {
+        console.error("Upload failed:", error);
         // Update progress with error
         setUploadProgress((prev) =>
           prev.map((item, idx) =>

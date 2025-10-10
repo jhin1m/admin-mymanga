@@ -1,6 +1,5 @@
 "use client";
 import React, { useState, useRef } from "react";
-import Image from "next/image";
 import { DndProvider, useDrag, useDrop } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
 
