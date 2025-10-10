@@ -25,6 +25,37 @@ interface Option {
   label: string;
 }
 
+interface Group {
+  id: string;
+  name: string;
+  slug: string;
+}
+
+interface User {
+  id: string;
+  name: string;
+  email: string;
+}
+
+interface Artist {
+  id: string;
+  name: string;
+  slug: string;
+}
+
+interface Doujinshi {
+  id: string;
+  name: string;
+  slug: string;
+}
+
+interface SearchApiResponse<T> {
+  success: boolean;
+  data: T[];
+  message?: string;
+  code: number;
+}
+
 const MangaSearchForm: React.FC<MangaSearchFormProps> = ({
   onSearch,
   onReset,
@@ -85,9 +116,9 @@ const MangaSearchForm: React.FC<MangaSearchFormProps> = ({
   const searchGroups = useCallback(async (query: string): Promise<Option[]> => {
     if (!token) return [];
     try {
-      const response = await apiService.searchGroups(token, query);
+      const response = await apiService.searchGroups(token, query) as SearchApiResponse<Group>;
       if (response.success && response.data) {
-        return response.data.map((group: any) => ({
+        return response.data.map((group: Group) => ({
           value: group.id,
           label: group.name,
         }));
@@ -101,9 +132,9 @@ const MangaSearchForm: React.FC<MangaSearchFormProps> = ({
   const searchUsers = useCallback(async (query: string): Promise<Option[]> => {
     if (!token) return [];
     try {
-      const response = await apiService.searchUsers(token, query);
+      const response = await apiService.searchUsers(token, query) as SearchApiResponse<User>;
       if (response.success && response.data) {
-        return response.data.map((user: any) => ({
+        return response.data.map((user: User) => ({
           value: user.id,
           label: user.name,
         }));
@@ -117,9 +148,9 @@ const MangaSearchForm: React.FC<MangaSearchFormProps> = ({
   const searchArtists = useCallback(async (query: string): Promise<Option[]> => {
     if (!token) return [];
     try {
-      const response = await apiService.searchArtists(token, query);
+      const response = await apiService.searchArtists(token, query) as SearchApiResponse<Artist>;
       if (response.success && response.data) {
-        return response.data.map((artist: any) => ({
+        return response.data.map((artist: Artist) => ({
           value: artist.id,
           label: artist.name,
         }));
@@ -133,9 +164,9 @@ const MangaSearchForm: React.FC<MangaSearchFormProps> = ({
   const searchDoujinshis = useCallback(async (query: string): Promise<Option[]> => {
     if (!token) return [];
     try {
-      const response = await apiService.searchDoujinshis(token, query);
+      const response = await apiService.searchDoujinshis(token, query) as SearchApiResponse<Doujinshi>;
       if (response.success && response.data) {
-        return response.data.map((doujinshi: any) => ({
+        return response.data.map((doujinshi: Doujinshi) => ({
           value: doujinshi.id,
           label: doujinshi.name,
         }));
