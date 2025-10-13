@@ -15,6 +15,7 @@ import {
   GroupIcon,
   ChatIcon,
   ShootingStarIcon,
+  ErrorIcon,
 } from "../icons/index";
 import SidebarWidget from "./SidebarWidget";
 
@@ -43,6 +44,11 @@ const navItems: NavItem[] = [
       { name: "Danh sách", path: "/admin/mangas", pro: false },
       { name: "Tạo mới", path: "/admin/mangas/create", pro: false },
     ],
+  },
+  {
+    icon: <ErrorIcon />,
+    name: "Báo lỗi",
+    path: "/admin/chapter-reports",
   },
   {
     icon: <ListIcon />,

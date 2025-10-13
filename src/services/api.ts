@@ -42,6 +42,50 @@ export interface BasicStats {
   pet_count: number;
 }
 
+export interface ChapterReportUser {
+  id: string;
+  name: string;
+  email?: string;
+  avatar?: string;
+}
+
+export interface ChapterReportManga {
+  id: string;
+  name: string;
+  cover?: string;
+}
+
+export interface ChapterReportChapter {
+  id: string;
+  name: string;
+}
+
+export interface ChapterReport {
+  id: string;
+  report_type: 'broken_images' | 'missing_images' | 'wrong_order' | 'wrong_chapter' | 'duplicate' | 'other';
+  report_type_label: string;
+  description: string;
+  user_id: string;
+  manga_id: string;
+  chapter_id: string;
+  created_at: string;
+  updated_at: string;
+  user?: ChapterReportUser;
+  manga?: ChapterReportManga;
+  chapter?: ChapterReportChapter;
+}
+
+export interface ChapterReportStatistics {
+  total: number;
+  today_reports: number;
+  recent_reports: number;
+}
+
+export interface ChapterReportFilters {
+  report_type?: string;
+  user_id?: string;
+}
+
 class ApiService {
   private getHeaders(token?: string): HeadersInit {
     const headers: HeadersInit = {
@@ -1185,6 +1229,85 @@ class ApiService {
     });
 
     return this.handleResponse(response);
+  }
+
+  // Chapter Reports management
+  async getChapterReports(token: string, params?: QueryParams): Promise<ApiResponse<unknown>> {
+    let queryString = '';
+    if (params) {
+      const urlParams = new URLSearchParams();
+
+      // Handle standard parameters
+      if (params.page) urlParams.append('page', params.page.toString());
+      if (params.per_page) urlParams.append('per_page', params.per_page.toString());
+      if (params.sort) urlParams.append('sort', params.sort);
+      if (params.include) urlParams.append('include', params.include);
+
+      // Handle filter parameters with filter[field] format
+      if (params.filters) {
+        Object.keys(params.filters).forEach(key => {
+          const value = params.filters![key];
+          if (value && value.toString().trim() !== '') {
+            urlParams.append(`filter[${key}]`, value.toString().trim());
+          }
+        });
+      }
+
+      queryString = urlParams.toString() ? '?' + urlParams.toString() : '';
+    }
+
+    const response = await fetch(`${API_BASE_URL}/chapter-reports${queryString}`, {
+      method: 'GET',
+      headers: this.getHeaders(token),
+    });
+
+    return this.handleResponse(response);
+  }
+
+  async getChapterReport(token: string, reportId: string): Promise<ApiResponse<ChapterReport>> {
+    const response = await fetch(`${API_BASE_URL}/chapter-reports/${reportId}`, {
+      method: 'GET',
+      headers: this.getHeaders(token),
+    });
+
+    return this.handleResponse<ChapterReport>(response);
+  }
+
+  async deleteChapterReport(token: string, reportId: string): Promise<ApiResponse<unknown>> {
+    const response = await fetch(`${API_BASE_URL}/chapter-reports/${reportId}`, {
+      method: 'DELETE',
+      headers: this.getHeaders(token),
+    });
+
+    // Handle 204 No Content response
+    if (response.status === 204) {
+      return {
+        success: true,
+        message: 'Chapter report deleted successfully',
+        code: 204,
+      };
+    }
+
+    return this.handleResponse(response);
+  }
+
+  async bulkDeleteChapterReports(token: string, reportIds: string[]): Promise<ApiResponse<unknown>> {
+    const response = await fetch(`${API_BASE_URL}/chapter-reports/bulk-delete`, {
+      method: 'DELETE',
+      headers: this.getHeaders(token),
+      body: JSON.stringify({ ids: reportIds }),
+    });
+
+    return this.handleResponse(response);
+  }
+
+  async getChapterReportsStatistics(token: string): Promise<ApiResponse<ChapterReportStatistics>> {
+    const response = await fetch(`${API_BASE_URL}/chapter-reports/statistics`, {
+      method: 'GET',
+      headers: this.getHeaders(token),
+    });
+
+    return this.handleResponse<ChapterReportStatistics>(response);
   }
 }
 
