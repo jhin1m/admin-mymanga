@@ -1,47 +1,28 @@
 "use client";
-import React, { useState, useEffect, useCallback } from "react";
-import { ChapterReportStatistics, apiService } from "@/services/api";
-import { useAuth } from "@/context/AuthContext";
+import React, { useEffect } from "react";
+import { useChapterReports } from "@/context/ChapterReportsContext";
 
 interface ChapterReportsStatsProps {
   onRefresh?: () => void;
 }
 
 const ChapterReportsStats: React.FC<ChapterReportsStatsProps> = ({ onRefresh }) => {
-  const { token } = useAuth();
-  const [stats, setStats] = useState<ChapterReportStatistics | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const fetchStats = useCallback(async () => {
-    if (!token) return;
-
-    setLoading(true);
-    setError(null);
-    try {
-      const response = await apiService.getChapterReportsStatistics(token);
-      if (response.success && response.data) {
-        setStats(response.data);
-      } else {
-        setError(response.message || "Không thể tải thống kê");
-      }
-    } catch (err) {
-      console.error("Error fetching chapter reports statistics:", err);
-      setError("Có lỗi xảy ra khi tải thống kê");
-    } finally {
-      setLoading(false);
-    }
-  }, [token]);
+  const {
+    statistics: stats,
+    isLoadingStats: loading,
+    statsError: error,
+    fetchStatistics
+  } = useChapterReports();
 
   useEffect(() => {
-    fetchStats();
-  }, [token, fetchStats]);
+    fetchStatistics();
+  }, [fetchStatistics]);
 
   useEffect(() => {
     if (onRefresh) {
-      fetchStats();
+      fetchStatistics(true); // Force refresh when onRefresh changes
     }
-  }, [onRefresh, fetchStats]);
+  }, [onRefresh, fetchStatistics]);
 
   if (loading) {
     return (
@@ -78,7 +59,7 @@ const ChapterReportsStats: React.FC<ChapterReportsStatsProps> = ({ onRefresh }) 
             <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
           </div>
           <button
-            onClick={fetchStats}
+            onClick={() => fetchStatistics(true)}
             className="ml-auto text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

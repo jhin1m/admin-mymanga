@@ -5,6 +5,7 @@ import ComponentCard from "@/components/common/ComponentCard";
 import ChapterReportSearchForm from "@/components/form/ChapterReportSearchForm";
 import ChapterReportsTable from "@/components/tables/ChapterReportsTable";
 import ChapterReportsStats from "@/components/ui/ChapterReportsStats";
+import { ChapterReportsProvider } from "@/context/ChapterReportsContext";
 
 interface SearchFilters {
   report_type: string;
@@ -12,7 +13,7 @@ interface SearchFilters {
   sort: string;
 }
 
-export default function ChapterReportsPage() {
+function ChapterReportsPageContent() {
   const [searchFilters, setSearchFilters] = useState<SearchFilters>({
     report_type: "",
     user_id: "",
@@ -60,5 +61,13 @@ export default function ChapterReportsPage() {
         </ComponentCard>
       </div>
     </div>
+  );
+}
+
+export default function ChapterReportsPage() {
+  return (
+    <ChapterReportsProvider>
+      <ChapterReportsPageContent />
+    </ChapterReportsProvider>
   );
 }

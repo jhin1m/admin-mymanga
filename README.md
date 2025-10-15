@@ -95,7 +95,7 @@ pnpm lint     # Lint check
 ---
 
 ## 📝 To Do
-- [ ] Error report page
+- [x] Error report page
 - [ ] Edit chapter by URL list
 - [ ] View field edit in Manga table
 - [ ] Rating field in Manga table
