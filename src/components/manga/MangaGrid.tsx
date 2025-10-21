@@ -1,6 +1,5 @@
 "use client";
 import React, { useState, useEffect, useCallback } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import Badge from "@/components/ui/badge/Badge";
 import Pagination from "@/components/ui/pagination/Pagination";
@@ -370,11 +369,10 @@ const MangaGrid: React.FC<MangaGridProps> = ({ searchFilters }) => {
           >
             {/* Cover Image */}
             <div className="relative h-50 md:h-60 bg-gray-100 dark:bg-gray-800">
-              <Image
+              <img
                 src={manga.cover_full_url}
                 alt={manga.name}
-                fill
-                className="object-cover transition-transform group-hover:scale-105"
+                className="w-full h-full object-cover transition-transform group-hover:scale-105"
                 onError={(e) => {
                   e.currentTarget.src = "/images/manga/default-cover.png";
                 }}
