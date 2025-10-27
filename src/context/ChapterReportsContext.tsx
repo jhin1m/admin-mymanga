@@ -4,30 +4,9 @@ import {
   apiService,
   type ChapterReport,
   type ChapterReportStatistics,
-  type ChapterReportUser,
-  type ChapterReportManga,
-  type ChapterReportChapter,
   type QueryParams
 } from "@/services/api";
 import { useAuth } from "./AuthContext";
-
-interface EnrichedChapterReport extends ChapterReport {
-  enrichedUser?: {
-    id: string;
-    name: string;
-    email?: string;
-    avatar?: string;
-  };
-  enrichedManga?: {
-    id: string;
-    name: string;
-    cover?: string;
-  };
-  enrichedChapter?: {
-    id: string;
-    name: string;
-  };
-}
 
 interface SearchFilters {
   report_type: string;
@@ -49,14 +28,14 @@ interface CacheEntry<T> {
 }
 
 interface ReportsListCache {
-  reports: EnrichedChapterReport[];
+  reports: ChapterReport[];
   pagination: PaginationData;
   filters: SearchFilters;
 }
 
 interface ChapterReportsContextType {
   // Data
-  reports: EnrichedChapterReport[];
+  reports: ChapterReport[];
   statistics: ChapterReportStatistics | null;
   pagination: PaginationData | null;
 
@@ -75,12 +54,6 @@ interface ChapterReportsContextType {
   bulkDeleteReports: (reportIds: string[]) => Promise<void>;
   refreshData: () => Promise<void>;
   clearCache: () => void;
-
-  // Cache utilities
-  getUserFromCache: (userId: string) => ChapterReportUser | null;
-  getMangaFromCache: (mangaId: string) => ChapterReportManga | null;
-  getChapterFromCache: (chapterId: string) => ChapterReportChapter | null;
-  warmCache: (reportIds: string[]) => Promise<void>;
 }
 
 const ChapterReportsContext = createContext<ChapterReportsContextType | undefined>(undefined);
@@ -105,12 +78,9 @@ export const ChapterReportsProvider: React.FC<{ children: React.ReactNode }> = (
   // Cache storage
   const [reportsCache, setReportsCache] = useState<Map<string, CacheEntry<ReportsListCache>>>(new Map());
   const [statisticsCache, setStatisticsCache] = useState<CacheEntry<ChapterReportStatistics> | null>(null);
-  const [usersCache, setUsersCache] = useState<Map<string, CacheEntry<ChapterReportUser>>>(new Map());
-  const [mangasCache, setMangasCache] = useState<Map<string, CacheEntry<ChapterReportManga>>>(new Map());
-  const [chaptersCache, setChaptersCache] = useState<Map<string, CacheEntry<ChapterReportChapter>>>(new Map());
 
   // Current data state
-  const [currentReports, setCurrentReports] = useState<EnrichedChapterReport[]>([]);
+  const [currentReports, setCurrentReports] = useState<ChapterReport[]>([]);
   const [currentPagination, setCurrentPagination] = useState<PaginationData | null>(null);
   const [currentStatistics, setCurrentStatistics] = useState<ChapterReportStatistics | null>(null);
 
@@ -121,159 +91,6 @@ export const ChapterReportsProvider: React.FC<{ children: React.ReactNode }> = (
   // Error states
   const [reportsError, setReportsError] = useState<string | null>(null);
   const [statsError, setStatsError] = useState<string | null>(null);
-
-  // Cache utilities
-  const getUserFromCache = useCallback((userId: string): ChapterReportUser | null => {
-    const cached = usersCache.get(userId) || null;
-    return isCacheValid(cached) ? cached!.data : null;
-  }, [usersCache]);
-
-  const getMangaFromCache = useCallback((mangaId: string): ChapterReportManga | null => {
-    const cached = mangasCache.get(mangaId) || null;
-    return isCacheValid(cached) ? cached!.data : null;
-  }, [mangasCache]);
-
-  const getChapterFromCache = useCallback((chapterId: string): ChapterReportChapter | null => {
-    const cached = chaptersCache.get(chapterId) || null;
-    return isCacheValid(cached) ? cached!.data : null;
-  }, [chaptersCache]);
-
-  // Cache warming utility - preload commonly accessed data
-  const warmCache = useCallback(async (reportIds: string[]) => {
-    if (!token || reportIds.length === 0) return;
-
-    try {
-      // Extract unique user, manga, and chapter IDs from reports
-      const userIds = new Set<string>();
-      const mangaIds = new Set<string>();
-      const chapterIds = new Set<string>();
-
-      currentReports.forEach(report => {
-        if (reportIds.includes(report.id)) {
-          userIds.add(report.user_id);
-          mangaIds.add(report.manga_id);
-          chapterIds.add(report.chapter_id);
-        }
-      });
-
-      // Warm user cache
-      const uncachedUserIds = Array.from(userIds).filter(id => !getUserFromCache(id));
-      if (uncachedUserIds.length > 0) {
-        for (const userId of uncachedUserIds) {
-          try {
-            const userResponse = await apiService.getUsers(token, {
-              filters: { id: userId },
-              per_page: 1
-            });
-            if (userResponse.success && userResponse.data && Array.isArray(userResponse.data) && userResponse.data.length > 0) {
-              const user = userResponse.data[0] as ChapterReportUser;
-              setUsersCache(prev => new Map(prev).set(userId, {
-                data: user,
-                timestamp: Date.now()
-              }));
-            }
-          } catch (error) {
-            console.error(`Error warming user cache for ${userId}:`, error);
-          }
-        }
-      }
-
-      // Similar logic for manga and chapters would go here if needed
-    } catch (error) {
-      console.error("Error warming cache:", error);
-    }
-  }, [token, currentReports, getUserFromCache]);
-
-  // Enrich report data with cached or fresh data
-  const enrichReportData = useCallback(async (report: ChapterReport): Promise<EnrichedChapterReport> => {
-    if (!token) return report as EnrichedChapterReport;
-
-    const enriched: EnrichedChapterReport = { ...report };
-
-    try {
-      // Try to get user from cache first
-      let user = getUserFromCache(report.user_id);
-      if (!user) {
-        const userResponse = await apiService.getUsers(token, {
-          filters: { id: report.user_id },
-          per_page: 1
-        });
-        if (userResponse.success && userResponse.data && Array.isArray(userResponse.data) && userResponse.data.length > 0) {
-          user = userResponse.data[0] as ChapterReportUser;
-          // Cache the user
-          setUsersCache(prev => new Map(prev).set(report.user_id, {
-            data: user!,
-            timestamp: Date.now()
-          }));
-        }
-      }
-
-      if (user) {
-        enriched.enrichedUser = {
-          id: user.id,
-          name: user.name,
-          email: user.email,
-          avatar: user.avatar
-        };
-      }
-
-      // Try to get manga from cache first
-      let manga = getMangaFromCache(report.manga_id);
-      if (!manga) {
-        const mangaResponse = await apiService.getMangaById(token, report.manga_id);
-        if (mangaResponse.success && mangaResponse.data) {
-          manga = mangaResponse.data as ChapterReportManga;
-          // Cache the manga
-          setMangasCache(prev => new Map(prev).set(report.manga_id, {
-            data: manga!,
-            timestamp: Date.now()
-          }));
-        }
-      }
-
-      if (manga) {
-        enriched.enrichedManga = {
-          id: manga.id,
-          name: manga.name,
-          cover: manga.cover
-        };
-      }
-
-      // Try to get chapter from cache first
-      let chapter = getChapterFromCache(report.chapter_id);
-      if (!chapter) {
-        const chapterResponse = await apiService.getChapters(token, {
-          filters: { manga_id: report.manga_id },
-          per_page: 999999,
-          sort: "-order"
-        });
-        if (chapterResponse.success && chapterResponse.data && Array.isArray(chapterResponse.data)) {
-          const chapters = chapterResponse.data as ChapterReportChapter[];
-          chapter = chapters.find((ch: ChapterReportChapter) => ch.id === report.chapter_id) || null;
-          if (chapter) {
-            // Cache all chapters from the response
-            chapters.forEach(ch => {
-              setChaptersCache(prev => new Map(prev).set(ch.id, {
-                data: ch,
-                timestamp: Date.now()
-              }));
-            });
-          }
-        }
-      }
-
-      if (chapter) {
-        enriched.enrichedChapter = {
-          id: chapter.id,
-          name: chapter.name
-        };
-      }
-    } catch (error) {
-      console.error("Error enriching report data:", error);
-    }
-
-    return enriched;
-  }, [token, getUserFromCache, getMangaFromCache, getChapterFromCache]);
 
   // Fetch reports with caching
   const fetchReports = useCallback(async (
@@ -324,10 +141,7 @@ export const ChapterReportsProvider: React.FC<{ children: React.ReactNode }> = (
       const response = await apiService.getChapterReports(token, params);
 
       if (response.success && response.data && Array.isArray(response.data)) {
-        // Enrich each report with additional data
-        const enrichedReports = await Promise.all(
-          response.data.map(report => enrichReportData(report))
-        );
+        const reports = response.data as ChapterReport[];
 
         const responseData = response as {
           success: boolean;
@@ -344,8 +158,8 @@ export const ChapterReportsProvider: React.FC<{ children: React.ReactNode }> = (
         };
 
         const pagination: PaginationData = {
-          count: responseData.pagination?.count || enrichedReports.length,
-          total: responseData.pagination?.total || enrichedReports.length,
+          count: responseData.pagination?.count || reports.length,
+          total: responseData.pagination?.total || reports.length,
           perPage: responseData.pagination?.perPage || 20,
           currentPage: responseData.pagination?.currentPage || page,
           totalPages: responseData.pagination?.totalPages || 1,
@@ -353,7 +167,7 @@ export const ChapterReportsProvider: React.FC<{ children: React.ReactNode }> = (
 
         // Cache the results
         const cacheData: ReportsListCache = {
-          reports: enrichedReports,
+          reports,
           pagination,
           filters: normalizedFilters
         };
@@ -363,7 +177,7 @@ export const ChapterReportsProvider: React.FC<{ children: React.ReactNode }> = (
           timestamp: Date.now()
         }));
 
-        setCurrentReports(enrichedReports);
+        setCurrentReports(reports);
         setCurrentPagination(pagination);
       } else {
         setReportsError(response.message || "Failed to fetch reports");
@@ -374,7 +188,7 @@ export const ChapterReportsProvider: React.FC<{ children: React.ReactNode }> = (
     } finally {
       setIsLoadingReports(false);
     }
-  }, [token, reportsCache, enrichReportData]);
+  }, [token, reportsCache]);
 
   // Fetch statistics with caching
   const fetchStatistics = useCallback(async (forceRefresh = false) => {
@@ -469,9 +283,6 @@ export const ChapterReportsProvider: React.FC<{ children: React.ReactNode }> = (
     // Clear all caches
     setReportsCache(new Map());
     setStatisticsCache(null);
-    setUsersCache(new Map());
-    setMangasCache(new Map());
-    setChaptersCache(new Map());
 
     // Fetch fresh data
     await Promise.all([
@@ -484,9 +295,6 @@ export const ChapterReportsProvider: React.FC<{ children: React.ReactNode }> = (
   const clearCache = useCallback(() => {
     setReportsCache(new Map());
     setStatisticsCache(null);
-    setUsersCache(new Map());
-    setMangasCache(new Map());
-    setChaptersCache(new Map());
   }, []);
 
   const value: ChapterReportsContextType = {
@@ -510,12 +318,6 @@ export const ChapterReportsProvider: React.FC<{ children: React.ReactNode }> = (
     bulkDeleteReports,
     refreshData,
     clearCache,
-
-    // Cache utilities
-    getUserFromCache,
-    getMangaFromCache,
-    getChapterFromCache,
-    warmCache,
   };
 
   return (

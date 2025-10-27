@@ -9,6 +9,7 @@ import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import { ConfirmModal } from "@/components/ui/modal/ConfirmModal";
 import { useModal } from "@/hooks/useModal";
 import Alert from "@/components/ui/alert/Alert";
+import Breadcrumb, { BreadcrumbItem } from "@/components/common/Breadcrumb";
 
 interface Manga {
   id: string;
@@ -228,9 +229,23 @@ const CreateNewChapterPage = () => {
     );
   }
 
+  const breadcrumbItems: BreadcrumbItem[] = [
+    { label: "Quản lý truyện", href: "/admin/mangas" },
+  ];
+
+  if (mangaName && mangaIdParam) {
+    breadcrumbItems.push(
+      { label: mangaName, href: `/admin/mangas/${mangaIdParam}/edit` },
+      { label: "Tạo chương mới" }
+    );
+  }
+
   return (
     <ProtectedRoute>
       <div className="min-h-screen bg-gray-950 p-6">
+        {/* Breadcrumb */}
+        <Breadcrumb pageTitle="Tạo chương mới" items={breadcrumbItems} />
+
         {/* Header Bar */}
         <div className="flex justify-between items-center mb-6 bg-gray-900 rounded-xl px-6 py-4">
           <div className="flex flex-col gap-1">

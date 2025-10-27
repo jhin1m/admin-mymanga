@@ -3,7 +3,6 @@ import React from "react";
 import { Modal } from "./index";
 import Button from "../button/Button";
 import Badge from "../badge/Badge";
-import Avatar from "../avatar/Avatar";
 import { ChapterReport } from "@/services/api";
 
 interface ChapterReportDetailModalProps {
@@ -114,25 +113,18 @@ export const ChapterReportDetailModal: React.FC<ChapterReportDetailModalProps> =
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Người báo lỗi
               </label>
-              <div className="flex items-center gap-3 bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
-                <Avatar
-                  src={report.user?.avatar || "/images/avatars/default.png"}
-                  alt={report.user?.name || "Unknown"}
-                  size="medium"
-                />
-                <div>
-                  <p className="font-medium text-gray-900 dark:text-white">
-                    {report.user?.name || "Unknown User"}
+              <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
+                <p className="font-medium text-gray-900 dark:text-white">
+                  {report.user?.name || `User ID: ${report.user_id}`}
+                </p>
+                {report.user?.email && (
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                    {report.user.email}
                   </p>
-                  {report.user?.email && (
-                    <p className="text-sm text-gray-500 dark:text-gray-400">
-                      {report.user.email}
-                    </p>
-                  )}
-                  <p className="text-xs text-gray-400 dark:text-gray-500">
-                    ID: {report.user_id}
-                  </p>
-                </div>
+                )}
+                <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                  ID: {report.user_id}
+                </p>
               </div>
             </div>
 
@@ -143,23 +135,12 @@ export const ChapterReportDetailModal: React.FC<ChapterReportDetailModalProps> =
                   Manga
                 </label>
                 <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
-                  <div className="flex items-start gap-3">
-                    {report.manga?.cover && (
-                      <img
-                        src={report.manga.cover}
-                        alt={report.manga.name}
-                        className="w-12 h-16 object-cover rounded"
-                      />
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-gray-900 dark:text-white truncate">
-                        {report.manga?.name || "Unknown Manga"}
-                      </p>
-                      <p className="text-xs text-gray-400 dark:text-gray-500">
-                        ID: {report.manga_id}
-                      </p>
-                    </div>
-                  </div>
+                  <p className="font-medium text-gray-900 dark:text-white">
+                    {report.manga?.name || `Manga ID: ${report.manga_id}`}
+                  </p>
+                  <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                    ID: {report.manga_id}
+                  </p>
                 </div>
               </div>
 
@@ -169,9 +150,9 @@ export const ChapterReportDetailModal: React.FC<ChapterReportDetailModalProps> =
                 </label>
                 <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
                   <p className="font-medium text-gray-900 dark:text-white">
-                    {report.chapter?.name || "Unknown Chapter"}
+                    {report.chapter?.name || `Chapter ID: ${report.chapter_id}`}
                   </p>
-                  <p className="text-xs text-gray-400 dark:text-gray-500">
+                  <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
                     ID: {report.chapter_id}
                   </p>
                 </div>

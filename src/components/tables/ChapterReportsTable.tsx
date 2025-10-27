@@ -9,7 +9,6 @@ import {
 } from "@/components/ui/table";
 import Button from "@/components/ui/button/Button";
 import Badge from "@/components/ui/badge/Badge";
-import Avatar from "@/components/ui/avatar/Avatar";
 import Pagination from "@/components/ui/pagination/Pagination";
 import { ConfirmModal } from "@/components/ui/modal/ConfirmModal";
 import { ChapterReportDetailModal } from "@/components/ui/modal/ChapterReportDetailModal";
@@ -159,30 +158,10 @@ const ChapterReportsTable: React.FC<ChapterReportsTableProps> = ({
     }
   };
 
-  const handleViewDetail = async (report: typeof reports[0]) => {
-    // Create a mapped report for the modal (using enriched data)
-    const modalReport: ChapterReport = {
-      ...report,
-      user: report.enrichedUser ? {
-        id: report.enrichedUser.id,
-        name: report.enrichedUser.name,
-        email: report.enrichedUser.email,
-        avatar: report.enrichedUser.avatar
-      } : undefined,
-      manga: report.enrichedManga ? {
-        id: report.enrichedManga.id,
-        name: report.enrichedManga.name,
-        cover: report.enrichedManga.cover
-      } : undefined,
-      chapter: report.enrichedChapter ? {
-        id: report.enrichedChapter.id,
-        name: report.enrichedChapter.name
-      } : undefined
-    };
-
-    setSelectedReport(modalReport);
+  const handleViewDetail = async (report: ChapterReport) => {
+    setSelectedReport(report);
     setDetailModalOpen(true);
-    setDetailLoading(false); // No need to fetch again since we have enriched data
+    setDetailLoading(false);
   };
 
   const handleDetailDelete = async () => {
@@ -363,37 +342,23 @@ const ChapterReportsTable: React.FC<ChapterReportsTableProps> = ({
 
                             <TableCell className="px-4 py-3 text-start">
                               <div className="flex items-center gap-2">
-                                <Avatar
-                                  src={report.enrichedUser?.avatar || "/images/avatars/default.png"}
-                                  alt={report.enrichedUser?.name || "Unknown"}
-                                  size="small"
-                                />
                                 <div className="min-w-0">
                                   <p className="text-theme-sm font-medium text-gray-800 dark:text-white/90 truncate">
-                                    {report.enrichedUser?.name || "Unknown"}
+                                    {report.user?.name || `ID: ${report.user_id}`}
                                   </p>
                                 </div>
                               </div>
                             </TableCell>
 
                             <TableCell className="px-4 py-3 text-start max-w-xs">
-                              <div className="flex items-center gap-2">
-                                {report.enrichedManga?.cover && (
-                                  <img
-                                    src={report.enrichedManga.cover}
-                                    alt={report.enrichedManga.name}
-                                    className="w-8 h-10 object-cover rounded"
-                                  />
-                                )}
-                                <p className="text-theme-sm text-gray-800 dark:text-white/90 truncate">
-                                  {report.enrichedManga?.name || "Unknown"}
-                                </p>
-                              </div>
+                              <p className="text-theme-sm text-gray-800 dark:text-white/90 truncate">
+                                {report.manga?.name || `ID: ${report.manga_id}`}
+                              </p>
                             </TableCell>
 
                             <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400 max-w-xs">
                               <p className="truncate">
-                                {report.enrichedChapter?.name || "Unknown"}
+                                {report.chapter?.name || `ID: ${report.chapter_id}`}
                               </p>
                             </TableCell>
 

@@ -90,6 +90,11 @@ const navItems: NavItem[] = [
     name: "Thông báo",
     path: "/admin/announcements",
   },
+  {
+    icon: <GridIcon />,
+    name: "Quảng cáo",
+    path: "/admin/ads",
+  },
 ];
 
 const othersItems: NavItem[] = [];

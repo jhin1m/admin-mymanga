@@ -86,6 +86,19 @@ export interface ChapterReportFilters {
   user_id?: string;
 }
 
+export interface Advertisement {
+  id: string;
+  name: string;
+  type: 'banner' | 'catfish' | 'other';
+  location: 'home' | 'manga_detail' | 'chapter_content' | 'all_pages';
+  position: string | null;
+  code: string;
+  is_active: boolean;
+  order: number;
+  created_at: string;
+  updated_at: string;
+}
+
 class ApiService {
   private getHeaders(token?: string): HeadersInit {
     const headers: HeadersInit = {
@@ -1308,6 +1321,101 @@ class ApiService {
     });
 
     return this.handleResponse<ChapterReportStatistics>(response);
+  }
+
+  // Advertisements management
+  async getAdvertisements(token: string, params?: QueryParams): Promise<ApiResponse<unknown>> {
+    let queryString = '';
+    if (params) {
+      const urlParams = new URLSearchParams();
+
+      // Handle standard parameters
+      if (params.page) urlParams.append('page', params.page.toString());
+      if (params.per_page) urlParams.append('per_page', params.per_page.toString());
+      if (params.sort) urlParams.append('sort', params.sort);
+
+      // Handle filter parameters with filter[field] format
+      if (params.filters) {
+        Object.keys(params.filters).forEach(key => {
+          const value = params.filters![key];
+          if (value && value.toString().trim() !== '') {
+            urlParams.append(`filter[${key}]`, value.toString().trim());
+          }
+        });
+      }
+
+      queryString = urlParams.toString() ? '?' + urlParams.toString() : '';
+    }
+
+    const response = await fetch(`${API_BASE_URL}/advertisements${queryString}`, {
+      method: 'GET',
+      headers: this.getHeaders(token),
+    });
+
+    return this.handleResponse(response);
+  }
+
+  async getAdvertisementById(token: string, adId: string): Promise<ApiResponse<unknown>> {
+    const response = await fetch(`${API_BASE_URL}/advertisements/${adId}`, {
+      method: 'GET',
+      headers: this.getHeaders(token),
+    });
+
+    return this.handleResponse(response);
+  }
+
+  async createAdvertisement(token: string, data: {
+    name: string;
+    type: string;
+    location: string;
+    position?: string;
+    code: string;
+    is_active?: boolean;
+    order?: number;
+  }): Promise<ApiResponse<unknown>> {
+    const response = await fetch(`${API_BASE_URL}/advertisements`, {
+      method: 'POST',
+      headers: this.getHeaders(token),
+      body: JSON.stringify(data),
+    });
+
+    return this.handleResponse(response);
+  }
+
+  async updateAdvertisement(token: string, adId: string, data: {
+    name?: string;
+    type?: string;
+    location?: string;
+    position?: string;
+    code?: string;
+    is_active?: boolean;
+    order?: number;
+  }): Promise<ApiResponse<unknown>> {
+    const response = await fetch(`${API_BASE_URL}/advertisements/${adId}`, {
+      method: 'PUT',
+      headers: this.getHeaders(token),
+      body: JSON.stringify(data),
+    });
+
+    return this.handleResponse(response);
+  }
+
+  async deleteAdvertisement(token: string, adId: string): Promise<ApiResponse<unknown>> {
+    const response = await fetch(`${API_BASE_URL}/advertisements/${adId}`, {
+      method: 'DELETE',
+      headers: this.getHeaders(token),
+    });
+
+    // Handle 204 No Content response
+    if (response.status === 204) {
+      return {
+        success: true,
+        message: 'Advertisement deleted successfully',
+        code: 204,
+      };
+    }
+
+    return this.handleResponse(response);
   }
 }
 

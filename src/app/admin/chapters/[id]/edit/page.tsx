@@ -8,6 +8,7 @@ import ImagePreviewZone, { UploadStatus } from "@/components/manga/ImagePreviewZ
 import ImageList from "@/components/manga/ImageList";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import Alert from "@/components/ui/alert/Alert";
+import Breadcrumb, { BreadcrumbItem } from "@/components/common/Breadcrumb";
 
 interface Chapter {
   id: string;
@@ -29,6 +30,19 @@ interface ChapterApiResponse {
   code: number;
 }
 
+interface Manga {
+  id: string;
+  name: string;
+  slug: string;
+}
+
+interface MangaApiResponse {
+  success: boolean;
+  data: Manga;
+  message?: string;
+  code: number;
+}
+
 const ChapterEditPage = () => {
   const params = useParams();
   const { token } = useAuth();
@@ -36,6 +50,7 @@ const ChapterEditPage = () => {
 
   const [chapter, setChapter] = useState<Chapter | null>(null);
   const [chapterName, setChapterName] = useState("");
+  const [mangaName, setMangaName] = useState("");
   const [images, setImages] = useState<string[]>([]);
   const [pendingImages, setPendingImages] = useState<File[]>([]);
   const [uploadStatuses, setUploadStatuses] = useState<Map<number, { status: UploadStatus; error?: string }>>(new Map());
@@ -92,6 +107,18 @@ const ChapterEditPage = () => {
         setChapterName(data.name);
         setImages(data.content || []);
         setLastUpdated(formatDateTime(data.updated_at));
+
+        // Fetch manga information for breadcrumb
+        if (data.manga_id) {
+          try {
+            const mangaResponse = await apiService.getMangaById(token, data.manga_id) as MangaApiResponse;
+            if (mangaResponse.success && mangaResponse.data) {
+              setMangaName(mangaResponse.data.name);
+            }
+          } catch (mangaError) {
+            console.error("Error fetching manga:", mangaError);
+          }
+        }
       }
     } catch (error: unknown) {
       console.error("Error fetching chapter:", error);
@@ -262,9 +289,26 @@ const ChapterEditPage = () => {
     );
   }
 
+  const breadcrumbItems: BreadcrumbItem[] = [
+    { label: "Quản lý truyện", href: "/admin/mangas" },
+  ];
+
+  if (mangaName && chapter) {
+    breadcrumbItems.push(
+      { label: mangaName, href: `/admin/mangas/${chapter.manga_id}/edit` },
+      { label: `Chỉnh sửa chương: ${chapterName}` }
+    );
+  }
+
   return (
     <ProtectedRoute>
       <div className="min-h-screen bg-gray-950 p-6">
+        {/* Breadcrumb */}
+        <Breadcrumb
+          pageTitle={`Chỉnh sửa chương${chapterName ? `: ${chapterName}` : ""}`}
+          items={breadcrumbItems}
+        />
+
         {/* Header Bar */}
         <div className="flex justify-between items-center mb-6 bg-gray-900 rounded-xl px-6 py-4">
           <div className="text-sm text-gray-400">
