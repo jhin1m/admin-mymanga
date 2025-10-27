@@ -483,7 +483,10 @@ const AdsTable: React.FC<AdsTableProps> = ({ searchFilters }) => {
           setAdToEdit(null);
         }}
         onSubmit={handleFormSubmit}
-        initialData={adToEdit || undefined}
+        initialData={adToEdit ? {
+          ...adToEdit,
+          position: adToEdit.position || ''
+        } : undefined}
         mode={formMode}
         isLoading={formLoading}
       />
